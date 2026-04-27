@@ -24,33 +24,55 @@ Built with [Phoenix LiveView][lv] and the [Ash framework][ash].
 
 ### Desktop
 
+#### Standard pages
+
 | | |
 |---|---|
 | **Dashboard** | **Trips list** |
 | ![Dashboard](docs/screenshots/desktop-dashboard.png) | ![Trips list](docs/screenshots/desktop-trips.png) |
-| **Inventory** | **Kits list** |
-| ![Inventory](docs/screenshots/desktop-items.png) | ![Kits](docs/screenshots/desktop-kits.png) |
-| **Kit detail** | **Cable types** |
-| ![Kit detail](docs/screenshots/desktop-kit-show.png) | ![Cable types](docs/screenshots/desktop-cable-types.png) |
-| **Trip — plan** | **Trip — pack** |
-| ![Trip plan](docs/screenshots/desktop-trip-plan.png) | ![Trip pack](docs/screenshots/desktop-trip-pack.png) |
-| **Food (kcal/serve, kcal/g)** | **Pack — charged + packed** |
-| ![Food category](docs/screenshots/desktop-items-food.png) | ![Pack electronics](docs/screenshots/desktop-trip-pack-electronics.png) |
-| **Item picker (full-state editor)** | **Battery types** |
-| ![Item picker](docs/screenshots/desktop-item-picker.png) | ![Battery types](docs/screenshots/desktop-battery-types.png) |
+| **Kits list** | **Kit detail** |
+| ![Kits](docs/screenshots/desktop-kits.png) | ![Kit detail](docs/screenshots/desktop-kit-show.png) |
+| **Cable types** | **Battery types** |
+| ![Cable types](docs/screenshots/desktop-cable-types.png) | ![Battery types](docs/screenshots/desktop-battery-types.png) |
 
-### Mobile
+#### Focused views
 
 | | | |
 |---|---|---|
-| **Dashboard** | **Inventory** | **Trips** |
-| ![Dashboard mobile](docs/screenshots/mobile-dashboard.png) | ![Inventory mobile](docs/screenshots/mobile-items.png) | ![Trips mobile](docs/screenshots/mobile-trips.png) |
-| **Kits** | **Kit detail** | **Trip — plan** |
-| ![Kits mobile](docs/screenshots/mobile-kits.png) | ![Kit detail mobile](docs/screenshots/mobile-kit-show.png) | ![Trip plan mobile](docs/screenshots/mobile-trip-plan.png) |
-| **Trip — pack** | **Cable types** | **Battery types** |
-| ![Trip pack mobile](docs/screenshots/mobile-trip-pack.png) | ![Cable types mobile](docs/screenshots/mobile-cable-types.png) | ![Battery types mobile](docs/screenshots/mobile-battery-types.png) |
+| **Food (kcal/serve, kcal/g)** | **Pack — charged + packed** | **Item picker** |
+| ![Food category](docs/screenshots/desktop-items-food.png) | ![Pack electronics](docs/screenshots/desktop-trip-pack-electronics.png) | ![Item picker](docs/screenshots/desktop-item-picker.png) |
+
+#### Full-length pages
+
+| | | |
+|---|---|---|
+| **Inventory** | **Trip — plan** | **Trip — pack** |
+| ![Inventory](docs/screenshots/desktop-items.png) | ![Trip plan](docs/screenshots/desktop-trip-plan.png) | ![Trip pack](docs/screenshots/desktop-trip-pack.png) |
+
+### Mobile
+
+#### Standard pages
+
+| | | |
+|---|---|---|
+| **Dashboard** | **Trips** | **Kits** |
+| ![Dashboard mobile](docs/screenshots/mobile-dashboard.png) | ![Trips mobile](docs/screenshots/mobile-trips.png) | ![Kits mobile](docs/screenshots/mobile-kits.png) |
+| **Kit detail** | **Cable types** | **Battery types** |
+| ![Kit detail mobile](docs/screenshots/mobile-kit-show.png) | ![Cable types mobile](docs/screenshots/mobile-cable-types.png) | ![Battery types mobile](docs/screenshots/mobile-battery-types.png) |
+
+#### Focused views
+
+| | | |
+|---|---|---|
 | **Food (kcal/serve, kcal/g)** | **Pack — charged + packed** | **Item picker** |
 | ![Food mobile](docs/screenshots/mobile-items-food.png) | ![Pack electronics mobile](docs/screenshots/mobile-trip-pack-electronics.png) | ![Item picker mobile](docs/screenshots/mobile-item-picker.png) |
+
+#### Full-length pages
+
+| | | |
+|---|---|---|
+| **Inventory** | **Trip — plan** | **Trip — pack** |
+| ![Inventory mobile](docs/screenshots/mobile-items.png) | ![Trip plan mobile](docs/screenshots/mobile-trip-plan.png) | ![Trip pack mobile](docs/screenshots/mobile-trip-pack.png) |
 
 ## Features
 
