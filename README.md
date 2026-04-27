@@ -73,14 +73,10 @@ Built with [Phoenix LiveView][lv] and the [Ash framework][ash].
 
 #### Full-length pages
 
-**Inventory**
-
-![Inventory mobile](docs/screenshots/mobile-items.png)
-
-| | |
-|---|---|
-| **Trip — plan** | **Trip — pack** |
-| ![Trip plan mobile](docs/screenshots/mobile-trip-plan.png) | ![Trip pack mobile](docs/screenshots/mobile-trip-pack.png) |
+| | | |
+|---|---|---|
+| **Inventory** | **Trip — plan** | **Trip — pack** |
+| ![Inventory mobile](docs/screenshots/mobile-items.png) | ![Trip plan mobile](docs/screenshots/mobile-trip-plan.png) | ![Trip pack mobile](docs/screenshots/mobile-trip-pack.png) |
 
 ## Features
 
