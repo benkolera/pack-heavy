@@ -23,7 +23,9 @@ defmodule PackheavyWeb.KitLive.Show do
         load: [kit_items: [:item]]
       )
 
-    assign(socket, :kit, kit)
+    socket
+    |> assign(:kit, kit)
+    |> assign(:page_title, "Packheavy: Kit · #{kit.name}")
   end
 
   defp existing_qty_on_kit(kit) do

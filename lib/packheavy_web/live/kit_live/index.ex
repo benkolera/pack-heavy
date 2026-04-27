@@ -6,7 +6,7 @@ defmodule PackheavyWeb.KitLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, socket |> assign(:form, nil) |> reload()}
+    {:ok, socket |> assign(page_title: "Packheavy: Kits", form: nil) |> reload()}
   end
 
   defp reload(socket) do

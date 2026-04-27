@@ -44,8 +44,14 @@ defmodule PackheavyWeb.TripLive.Show do
         load: [:validation_report, trip_items: [:item], trip_kits: [:kit]]
       )
 
-    assign(socket, :trip, trip)
+    socket
+    |> assign(:trip, trip)
+    |> assign(:page_title, "Packheavy: #{trip.name} (#{trip_state_label(trip.state)})")
   end
+
+  defp trip_state_label(:draft), do: "Planning"
+  defp trip_state_label(:packing), do: "Packing"
+  defp trip_state_label(:complete), do: "Complete"
 
   @impl true
   def handle_event("set_tab", %{"tab" => tab}, socket) do
@@ -272,7 +278,7 @@ defmodule PackheavyWeb.TripLive.Show do
       <div class="space-y-1">
         <h3 class="text-xs font-semibold opacity-70 uppercase tracking-wide">Resources</h3>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <div class="card bg-base-200 p-3">
+          <div class="summary-card card bg-base-200 p-3">
             <div class="text-xs opacity-70">Calories</div>
             <div class="text-lg font-semibold tabular-nums">{calories} kcal</div>
             <div :if={days} class="text-xs opacity-50">
@@ -282,11 +288,11 @@ defmodule PackheavyWeb.TripLive.Show do
               avg {kcal_per_g} kcal/g across {food_g} g
             </div>
           </div>
-          <div class="card bg-base-200 p-3">
+          <div class="summary-card card bg-base-200 p-3">
             <div class="text-xs opacity-70">Water capacity</div>
             <div class="text-lg font-semibold tabular-nums">{Map.get(totals, :water_ml, 0)} ml</div>
           </div>
-          <div class="card bg-base-200 p-3">
+          <div class="summary-card card bg-base-200 p-3">
             <div class="text-xs opacity-70">Power</div>
             <div class="text-lg font-semibold tabular-nums">{Map.get(totals, :power_mah, 0)} mAh</div>
           </div>
@@ -333,7 +339,13 @@ defmodule PackheavyWeb.TripLive.Show do
                 <span :if={ti.item.brand} class="opacity-60 mr-1">{ti.item.brand}</span>{ti.item.title}
                 <span :if={ti.source == :kit} class="badge badge-xs ml-1">kit</span>
               </span>
-              <span class="opacity-60 text-xs tabular-nums w-10 text-right">×{ti.qty}</span>
+              <span class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">
+                <%= if ti.qty > 1 do %>
+                  {ti.item.weight_g || 0} g × {ti.qty}
+                <% else %>
+                  ×1
+                <% end %>
+              </span>
               <span class="opacity-60 text-xs tabular-nums w-16 text-right">{(ti.item.weight_g || 0) * ti.qty} g</span>
               <button phx-click="remove_item" phx-value-id={ti.id} data-confirm="Remove from trip?" class="btn btn-ghost btn-xs">×</button>
             </li>
@@ -370,12 +382,12 @@ defmodule PackheavyWeb.TripLive.Show do
     <% days = PackheavyWeb.TripLive.Show.trip_days(@trip) %>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-      <div class="card bg-base-200 p-3">
+      <div class="summary-card card bg-base-200 p-3">
         <div class="text-xs opacity-70">Base</div>
         <div class="text-lg font-semibold tabular-nums">{base_g} g</div>
         <div class="text-xs opacity-50">empty containers + gear</div>
       </div>
-      <div class="card bg-base-200 p-3">
+      <div class="summary-card card bg-base-200 p-3">
         <div class="text-xs opacity-70">Base + food</div>
         <div class="text-lg font-semibold tabular-nums">{dry_g} g</div>
         <div class="text-xs opacity-50">+ {food_g} g food</div>
@@ -383,7 +395,7 @@ defmodule PackheavyWeb.TripLive.Show do
           ~{div(food_g, max(days, 1))} g/day · {days} day(s)
         </div>
       </div>
-      <div class="card bg-base-200 p-3">
+      <div class="summary-card card bg-base-200 p-3">
         <div class="text-xs opacity-70">Base + food + water</div>
         <div class="text-lg font-semibold tabular-nums">{dry_g + water_g} g</div>
         <div class="text-xs opacity-50">+ {water_g} g water (full)</div>
@@ -477,17 +489,25 @@ defmodule PackheavyWeb.TripLive.Show do
               <span class="flex-1 min-w-0 truncate text-sm">
                 <span :if={ti.item.brand} class="opacity-60 mr-1">{ti.item.brand}</span>{ti.item.title}
               </span>
-              <span class="text-xs opacity-60 shrink-0 tabular-nums">×{ti.qty}</span>
+              <span class="text-xs opacity-60 shrink-0 tabular-nums whitespace-nowrap">
+                <%= if ti.qty > 1 do %>
+                  {ti.item.weight_g || 0} g × {ti.qty}
+                <% else %>
+                  ×1
+                <% end %>
+              </span>
               <span :if={ti.source == :kit} class="badge badge-xs shrink-0">kit</span>
               <%= if PackheavyWeb.TripLive.Show.needs_charging?(ti, @rechargeable_battery_ids) do %>
                 <label class="flex items-center justify-end cursor-pointer w-12 sm:w-24 shrink-0" aria-label="charged">
-                  <input type="checkbox" class="checkbox checkbox-sm" checked={ti.charged} phx-click="toggle_charged" phx-value-id={ti.id} />
+                  <input type="checkbox" class="checkbox checkbox-sm print:hidden" checked={ti.charged} phx-click="toggle_charged" phx-value-id={ti.id} />
+                  <span class="hidden print:inline text-base leading-none">{if ti.charged, do: "☑", else: "☐"}</span>
                 </label>
               <% else %>
                 <span class="w-12 sm:w-24 shrink-0 text-right opacity-20">—</span>
               <% end %>
               <label class="flex items-center justify-end cursor-pointer w-12 sm:w-24 shrink-0" aria-label="packed">
-                <input type="checkbox" class="checkbox checkbox-sm" checked={ti.packed} phx-click="toggle_packed" phx-value-id={ti.id} />
+                <input type="checkbox" class="checkbox checkbox-sm print:hidden" checked={ti.packed} phx-click="toggle_packed" phx-value-id={ti.id} />
+                <span class="hidden print:inline text-base leading-none">{if ti.packed, do: "☑", else: "☐"}</span>
               </label>
             </li>
           </ul>

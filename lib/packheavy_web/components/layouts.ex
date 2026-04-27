@@ -39,7 +39,10 @@ defmodule PackheavyWeb.Layouts do
     ~H"""
     <header class="navbar px-4 sm:px-6 lg:px-8 border-b border-base-300">
       <div class="flex-1">
-        <.link navigate={~p"/dashboard"} class="text-lg font-semibold">packheavy</.link>
+        <.link navigate={~p"/dashboard"} class="flex items-center gap-2 text-lg font-semibold">
+          <img src={~p"/images/logo.svg"} alt="" class="size-7" />
+          <span>packheavy</span>
+        </.link>
       </div>
 
       <%!-- Desktop / wide screens: inline links --%>
@@ -88,6 +91,10 @@ defmodule PackheavyWeb.Layouts do
 
     <main class="px-4 py-8 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-5xl xl:max-w-7xl space-y-4">
+        <div class="hidden print:flex items-center gap-2 pb-2 mb-2 border-b border-base-300">
+          <img src={~p"/images/logo.svg"} alt="" class="size-8" />
+          <span class="text-xl font-semibold">packheavy</span>
+        </div>
         {render_slot(@inner_block)}
       </div>
     </main>

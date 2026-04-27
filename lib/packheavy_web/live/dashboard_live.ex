@@ -6,7 +6,7 @@ defmodule PackheavyWeb.DashboardLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign_dashboard(socket)}
+    {:ok, socket |> assign(:page_title, "Packheavy: Dashboard") |> assign_dashboard()}
   end
 
   defp assign_dashboard(socket) do

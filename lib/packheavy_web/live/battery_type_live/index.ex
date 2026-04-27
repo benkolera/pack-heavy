@@ -8,6 +8,7 @@ defmodule PackheavyWeb.BatteryTypeLive.Index do
   def mount(_params, _session, socket) do
     {:ok,
      socket
+     |> assign(:page_title, "Packheavy: Battery Types")
      |> assign(:form, build_form(socket.assigns.current_user))
      |> reload()}
   end

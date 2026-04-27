@@ -33,6 +33,7 @@ defmodule PackheavyWeb.ItemLive.Index do
     {:ok,
      socket
      |> assign(
+       page_title: "Packheavy: Item Inventory",
        categories: @categories,
        cable_types: cable_types,
        battery_types: battery_types
