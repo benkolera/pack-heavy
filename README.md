@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="priv/static/images/logo.svg" alt="packheavy logo" width="128" />
+</p>
+
 # packheavy
 
 > ⚠️ **Local-only — do not deploy this anywhere public.**
