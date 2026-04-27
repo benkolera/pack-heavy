@@ -44,10 +44,12 @@ Built with [Phoenix LiveView][lv] and the [Ash framework][ash].
 
 #### Full-length pages
 
-| | | |
-|---|---|---|
-| **Inventory** | **Trip — plan** | **Trip — pack** |
-| ![Inventory](docs/screenshots/desktop-items.png) | ![Trip plan](docs/screenshots/desktop-trip-plan.png) | ![Trip pack](docs/screenshots/desktop-trip-pack.png) |
+| | |
+|---|---|
+| **Inventory** | **Trip — plan** |
+| ![Inventory](docs/screenshots/desktop-items.png) | ![Trip plan](docs/screenshots/desktop-trip-plan.png) |
+| **Trip — pack** | |
+| ![Trip pack](docs/screenshots/desktop-trip-pack.png) | |
 
 ### Mobile
 
@@ -69,10 +71,12 @@ Built with [Phoenix LiveView][lv] and the [Ash framework][ash].
 
 #### Full-length pages
 
-| | | |
-|---|---|---|
-| **Inventory** | **Trip — plan** | **Trip — pack** |
-| ![Inventory mobile](docs/screenshots/mobile-items.png) | ![Trip plan mobile](docs/screenshots/mobile-trip-plan.png) | ![Trip pack mobile](docs/screenshots/mobile-trip-pack.png) |
+| | |
+|---|---|
+| **Inventory** | **Trip — plan** |
+| ![Inventory mobile](docs/screenshots/mobile-items.png) | ![Trip plan mobile](docs/screenshots/mobile-trip-plan.png) |
+| **Trip — pack** | |
+| ![Trip pack mobile](docs/screenshots/mobile-trip-pack.png) | |
 
 ## Features
 
