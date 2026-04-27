@@ -51,3 +51,6 @@ npm-debug.log
 # OS cruft.
 .DS_Store
 Thumbs.db
+
+# Claude Code local working state (CLAUDE.md is tracked; this dir is per-machine).
+.claude/
