@@ -212,14 +212,14 @@ defmodule PackheavyWeb.ItemLive.Index do
 
           <%= if @form do %>
             <.form for={@form} phx-change="validate" phx-submit="save" class="space-y-4">
-              <div class="grid grid-cols-3 gap-3">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <.field label="Brand (optional)">
                   <input type="text" name="form[brand]" value={@form[:brand].value} class="input input-bordered w-full" placeholder="e.g. Savotta" list="brands-list" autocomplete="off" />
                   <datalist id="brands-list">
                     <option :for={b <- @brands} value={b} />
                   </datalist>
                 </.field>
-                <div class="col-span-2">
+                <div class="sm:col-span-2">
                   <.field label="Title">
                     <input type="text" name="form[title]" value={@form[:title].value} class="input input-bordered w-full" required autofocus />
                   </.field>
@@ -230,7 +230,7 @@ defmodule PackheavyWeb.ItemLive.Index do
                 <.field label="Weight (g)">
                   <input type="number" name="form[weight_g]" value={@form[:weight_g].value} class="input input-bordered w-full" min="0" />
                 </.field>
-                <.field label="Qty on hand">
+                <.field label="Qty">
                   <input type="number" name="form[qty]" value={@form[:qty].value} class="input input-bordered w-full" min="0" />
                 </.field>
               </div>
@@ -261,7 +261,7 @@ defmodule PackheavyWeb.ItemLive.Index do
         <section :for={{cat, label} <- @categories}>
           <div class="flex justify-between items-center border-b-2 border-success pb-1 mb-1">
             <h2 class="text-success font-bold uppercase tracking-wide text-sm">{label}</h2>
-            <.link patch={~p"/items/new?category=#{cat}"} class="text-success text-xl leading-none" title={"Add #{label}"}>+</.link>
+            <.link patch={~p"/items/new?category=#{cat}"} class="no-print text-success text-xl leading-none" title={"Add #{label}"}>+</.link>
           </div>
           <%= case Map.get(@grouped, cat, []) do %>
             <% [] -> %>
@@ -269,16 +269,23 @@ defmodule PackheavyWeb.ItemLive.Index do
             <% items -> %>
               <ul class="divide-y divide-base-300">
                 <li :for={item <- items} class="flex items-center py-3 group hover:bg-base-200 px-2 rounded gap-2">
-                  <.link patch={~p"/items/#{item.id}/edit"} class="flex-1 min-w-0 truncate text-left">
-                    <span :if={item.brand} class="opacity-60 mr-1">{item.brand}</span>{item.title}
-                    <span :if={item.qty != 1} class="opacity-60 ml-1">× {item.qty}</span>
+                  <.link patch={~p"/items/#{item.id}/edit"} class="flex-1 min-w-0 text-left leading-tight">
+                    <div class="truncate">
+                      <span :if={item.brand} class="opacity-60 mr-1">{item.brand}</span>{item.title}
+                      <span :if={item.qty != 1} class="opacity-60 ml-1">× {item.qty}</span>
+                    </div>
+                    <% extra = category_extra(item, @battery_types) %>
+                    <% extra2 = category_extra_secondary(item) %>
+                    <div :if={extra || extra2} class="text-xs opacity-50 tabular-nums sm:hidden">
+                      {[extra, extra2] |> Enum.reject(&is_nil/1) |> Enum.join(" · ")}
+                    </div>
                   </.link>
-                  <span class="opacity-60 text-sm tabular-nums text-right w-16 shrink-0">{category_extra(item, @battery_types)}</span>
-                  <span class="opacity-60 text-sm tabular-nums text-right w-20 shrink-0">{category_extra_secondary(item)}</span>
+                  <span class="opacity-60 text-sm tabular-nums text-right w-16 shrink-0 hidden sm:inline">{category_extra(item, @battery_types)}</span>
+                  <span class="opacity-60 text-sm tabular-nums text-right w-20 shrink-0 hidden sm:inline">{category_extra_secondary(item)}</span>
                   <span class="opacity-60 tabular-nums text-right w-20 shrink-0">{format_weight(item.weight_g)}</span>
                   <span class="w-10 shrink-0 flex justify-end items-center gap-1">
                     <button phx-click="delete" phx-value-id={item.id} data-confirm={"Delete #{item.title}?"} class="opacity-0 group-hover:opacity-100 btn btn-ghost btn-xs">×</button>
-                    <.link patch={~p"/items/#{item.id}/edit"} class="opacity-30 group-hover:opacity-70">›</.link>
+                    <.link patch={~p"/items/#{item.id}/edit"} class="no-print opacity-30 group-hover:opacity-70">›</.link>
                   </span>
                 </li>
               </ul>

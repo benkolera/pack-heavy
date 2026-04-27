@@ -185,16 +185,17 @@ defmodule PackheavyWeb.ItemPicker do
                       phx-value-id={item.id}
                       phx-target={@myself}
                     />
-                    <div class="flex-1 min-w-0 truncate text-sm">
-                      <span :if={item.brand} class="opacity-60 mr-1">{item.brand}</span>{item.title}
-                      <span :if={Map.has_key?(@existing_qty, item.id)} class="badge badge-xs ml-2">on trip</span>
+                    <div class="flex-1 min-w-0 text-sm leading-tight">
+                      <div class="truncate">
+                        <span :if={item.brand} class="opacity-60 mr-1">{item.brand}</span>{item.title}
+                        <span :if={Map.has_key?(@existing_qty, item.id)} class="badge badge-xs ml-1 align-middle">on trip</span>
+                      </div>
+                      <div class="text-xs opacity-50 tabular-nums">
+                        {item.weight_g} g<%= if cap = max_qty(item, @max_qty_for) do %>
+                          · max {cap}
+                        <% end %>
+                      </div>
                     </div>
-                    <span class="opacity-50 text-xs tabular-nums w-16 text-right">
-                      <%= if cap = max_qty(item, @max_qty_for) do %>
-                        max {cap}
-                      <% end %>
-                    </span>
-                    <span class="opacity-60 text-xs tabular-nums w-14 text-right">{item.weight_g} g</span>
                     <%= if Map.has_key?(@selected, item.id) do %>
                       <input
                         type="number"
@@ -207,10 +208,10 @@ defmodule PackheavyWeb.ItemPicker do
                         phx-debounce="200"
                         phx-target={@myself}
                         name="qty"
-                        class="input input-bordered input-xs w-16"
+                        class="input input-bordered input-xs w-14 shrink-0"
                       />
                     <% else %>
-                      <span class="w-16"></span>
+                      <span class="w-14 shrink-0"></span>
                     <% end %>
                   </li>
                 </ul>

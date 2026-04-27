@@ -189,7 +189,6 @@ defmodule PackheavyWeb.TripLive.Show do
 
       <div role="tablist" class="tabs tabs-boxed">
         <a role="tab" class={["tab", @tab == :plan && "tab-active"]} phx-click="set_tab" phx-value-tab="plan">Plan</a>
-        <a role="tab" class={["tab", @tab == :validate && "tab-active"]} phx-click="set_tab" phx-value-tab="validate">Validate</a>
         <a role="tab" class={["tab", @tab == :pack && "tab-active"]} phx-click="set_tab" phx-value-tab="pack">Pack</a>
         <a role="tab" class={["tab", @tab == :complete && "tab-active"]} phx-click="set_tab" phx-value-tab="complete">Complete</a>
       </div>
@@ -197,8 +196,6 @@ defmodule PackheavyWeb.TripLive.Show do
       <%= case @tab do %>
         <% :plan -> %>
           <.plan_tab trip={@trip} items={@items} kits={@kits} />
-        <% :validate -> %>
-          <.validate_tab trip={@trip} />
         <% :pack -> %>
           <.pack_tab trip={@trip} rechargeable_battery_ids={@rechargeable_battery_ids} />
         <% :complete -> %>
@@ -256,9 +253,67 @@ defmodule PackheavyWeb.TripLive.Show do
       |> assign(:section_weight, section_weight)
 
     ~H"""
-    <.weight_breakdown trip={@trip} />
+    <% report = @trip.validation_report || %{errors: [], warnings: [], totals: %{}} %>
+    <% totals = report.totals || %{} %>
+    <% calories = Map.get(totals, :calories, 0) %>
+    <% food_g = Map.get(totals, :food_weight_g, 0) %>
+    <% days = PackheavyWeb.TripLive.Show.trip_days(@trip) %>
+    <% kcal_per_g =
+      if food_g > 0,
+        do: :erlang.float_to_binary(calories / food_g, decimals: 1),
+        else: nil %>
 
-    <div class="flex justify-between items-center mt-4">
+    <div class="grid grid-cols-1 xl:grid-cols-2 print:grid-cols-1 gap-4 mt-2">
+      <div class="space-y-1">
+        <h3 class="text-xs font-semibold opacity-70 uppercase tracking-wide">Weight breakdown</h3>
+        <.weight_breakdown trip={@trip} />
+      </div>
+
+      <div class="space-y-1">
+        <h3 class="text-xs font-semibold opacity-70 uppercase tracking-wide">Resources</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div class="card bg-base-200 p-3">
+            <div class="text-xs opacity-70">Calories</div>
+            <div class="text-lg font-semibold tabular-nums">{calories} kcal</div>
+            <div :if={days} class="text-xs opacity-50">
+              ~{div(calories, max(days, 1))} kcal/day · {days} day(s)
+            </div>
+            <div :if={kcal_per_g} class="text-xs opacity-50">
+              avg {kcal_per_g} kcal/g across {food_g} g
+            </div>
+          </div>
+          <div class="card bg-base-200 p-3">
+            <div class="text-xs opacity-70">Water capacity</div>
+            <div class="text-lg font-semibold tabular-nums">{Map.get(totals, :water_ml, 0)} ml</div>
+          </div>
+          <div class="card bg-base-200 p-3">
+            <div class="text-xs opacity-70">Power</div>
+            <div class="text-lg font-semibold tabular-nums">{Map.get(totals, :power_mah, 0)} mAh</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div :if={report.errors != [] or report.warnings != []} class="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-3">
+      <div :if={report.errors != []} class="card bg-error/10 border border-error p-3">
+        <div class="text-xs font-semibold uppercase tracking-wide text-error mb-1">Errors</div>
+        <ul class="list-disc pl-5 text-sm text-error space-y-0.5">
+          <li :for={e <- report.errors}>
+            {e.item_title}: missing charger
+          </li>
+        </ul>
+      </div>
+      <div :if={report.warnings != []} class="card bg-warning/10 border border-warning p-3">
+        <div class="text-xs font-semibold uppercase tracking-wide text-warning mb-1">Warnings</div>
+        <ul class="list-disc pl-5 text-sm text-warning space-y-0.5">
+          <li :for={w <- report.warnings}>
+            {w.item_title}: no spare battery on trip
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="flex justify-between items-center mt-6">
       <h2 class="text-lg font-semibold">Items on this trip</h2>
       <button phx-click="open_picker" class="btn btn-primary btn-sm">+ Add items</button>
     </div>
@@ -314,7 +369,7 @@ defmodule PackheavyWeb.TripLive.Show do
     <% base_g = dry_g - food_g %>
     <% days = PackheavyWeb.TripLive.Show.trip_days(@trip) %>
 
-    <div class="grid grid-cols-3 gap-2">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
       <div class="card bg-base-200 p-3">
         <div class="text-xs opacity-70">Base</div>
         <div class="text-lg font-semibold tabular-nums">{base_g} g</div>
@@ -357,71 +412,6 @@ defmodule PackheavyWeb.TripLive.Show do
       {:tools, "Tools"},
       {:other, "Other"}
     ]
-  end
-
-  attr :trip, :any, required: true
-
-  defp validate_tab(assigns) do
-    ~H"""
-    <% report = @trip.validation_report || %{errors: [], warnings: [], totals: %{}} %>
-    <% totals = report.totals || %{} %>
-    <% calories = Map.get(totals, :calories, 0) %>
-    <% days = PackheavyWeb.TripLive.Show.trip_days(@trip) %>
-
-    <h3 class="text-sm font-semibold opacity-70 uppercase tracking-wide mt-2">Weight breakdown</h3>
-    <div class="mt-1">
-      <.weight_breakdown trip={@trip} />
-    </div>
-
-    <h3 class="text-sm font-semibold opacity-70 uppercase tracking-wide mt-4">Resources</h3>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-1">
-      <% food_g = Map.get(totals, :food_weight_g, 0) %>
-      <% kcal_per_g =
-        if food_g > 0,
-          do: :erlang.float_to_binary(calories / food_g, decimals: 1),
-          else: nil %>
-      <div class="card bg-base-200 p-3">
-        <div class="text-xs opacity-70">Calories</div>
-        <div class="text-lg font-semibold tabular-nums">{calories} kcal</div>
-        <div :if={days} class="text-xs opacity-50">
-          ~{div(calories, max(days, 1))} kcal/day · {days} day(s)
-        </div>
-        <div :if={kcal_per_g} class="text-xs opacity-50">
-          avg {kcal_per_g} kcal/g across {food_g} g of food
-        </div>
-      </div>
-      <div class="card bg-base-200 p-3">
-        <div class="text-xs opacity-70">Water capacity</div>
-        <div class="text-lg font-semibold tabular-nums">{Map.get(totals, :water_ml, 0)} ml</div>
-      </div>
-      <div class="card bg-base-200 p-3">
-        <div class="text-xs opacity-70">Power</div>
-        <div class="text-lg font-semibold tabular-nums">{Map.get(totals, :power_mah, 0)} mAh</div>
-      </div>
-    </div>
-
-    <h3 class="font-semibold mt-4">Errors</h3>
-    <%= if report.errors == [] do %>
-      <p class="text-success">None — you have a charger for every rechargeable device.</p>
-    <% else %>
-      <ul class="list-disc pl-5 text-error">
-        <li :for={e <- report.errors}>
-          {e.item_title}: missing charger (cable type id {e.cable_type_id})
-        </li>
-      </ul>
-    <% end %>
-
-    <h3 class="font-semibold mt-4">Warnings</h3>
-    <%= if report.warnings == [] do %>
-      <p class="opacity-70">None.</p>
-    <% else %>
-      <ul class="list-disc pl-5 text-warning">
-        <li :for={w <- report.warnings}>
-          {w.item_title}: no spare battery on trip (battery type id {w.battery_type_id})
-        </li>
-      </ul>
-    <% end %>
-    """
   end
 
   attr :trip, :any, required: true
@@ -473,23 +463,30 @@ defmodule PackheavyWeb.TripLive.Show do
               {packed}/{total} packed
             </span>
           </div>
+          <div class="flex items-center gap-2 px-1 pb-1 text-[10px] uppercase tracking-wide opacity-60">
+            <span class="flex-1"></span>
+            <span class="flex items-center justify-end gap-1 w-12 sm:w-24 shrink-0" aria-hidden="true">
+              <.icon name="hero-bolt-mini" class="size-3" /><span class="hidden sm:inline">charged</span>
+            </span>
+            <span class="flex items-center justify-end gap-1 w-12 sm:w-24 shrink-0" aria-hidden="true">
+              <.icon name="hero-archive-box-mini" class="size-3" /><span class="hidden sm:inline">packed</span>
+            </span>
+          </div>
           <ul class="divide-y divide-base-300">
-            <li :for={ti <- Map.get(@grouped, cat, [])} class="flex items-center py-2 px-1 gap-3">
+            <li :for={ti <- Map.get(@grouped, cat, [])} class="flex items-center py-2 px-1 gap-2">
               <span class="flex-1 min-w-0 truncate text-sm">
                 <span :if={ti.item.brand} class="opacity-60 mr-1">{ti.item.brand}</span>{ti.item.title}
-                <span class="text-xs opacity-60 ml-1">×{ti.qty}</span>
-                <span :if={ti.source == :kit} class="badge badge-xs ml-1">kit</span>
               </span>
+              <span class="text-xs opacity-60 shrink-0 tabular-nums">×{ti.qty}</span>
+              <span :if={ti.source == :kit} class="badge badge-xs shrink-0">kit</span>
               <%= if PackheavyWeb.TripLive.Show.needs_charging?(ti, @rechargeable_battery_ids) do %>
-                <label class="flex items-center justify-end gap-1 text-xs opacity-70 cursor-pointer w-24 shrink-0">
-                  <span class="hidden sm:inline">charged</span>
+                <label class="flex items-center justify-end cursor-pointer w-12 sm:w-24 shrink-0" aria-label="charged">
                   <input type="checkbox" class="checkbox checkbox-sm" checked={ti.charged} phx-click="toggle_charged" phx-value-id={ti.id} />
                 </label>
               <% else %>
-                <span class="w-24 shrink-0 text-right opacity-20">—</span>
+                <span class="w-12 sm:w-24 shrink-0 text-right opacity-20">—</span>
               <% end %>
-              <label class="flex items-center justify-end gap-1 text-xs opacity-70 cursor-pointer w-24 shrink-0">
-                <span class="hidden sm:inline">packed</span>
+              <label class="flex items-center justify-end cursor-pointer w-12 sm:w-24 shrink-0" aria-label="packed">
                 <input type="checkbox" class="checkbox checkbox-sm" checked={ti.packed} phx-click="toggle_packed" phx-value-id={ti.id} />
               </label>
             </li>

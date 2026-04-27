@@ -41,8 +41,10 @@ defmodule PackheavyWeb.Layouts do
       <div class="flex-1">
         <.link navigate={~p"/dashboard"} class="text-lg font-semibold">packheavy</.link>
       </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-2 items-center">
+
+      <%!-- Desktop / wide screens: inline links --%>
+      <div class="flex-none hidden md:block">
+        <ul class="flex px-1 space-x-2 items-center">
           <li><.link navigate={~p"/items"} class="btn btn-ghost btn-sm">Items</.link></li>
           <li><.link navigate={~p"/kits"} class="btn btn-ghost btn-sm">Kits</.link></li>
           <li><.link navigate={~p"/trips"} class="btn btn-ghost btn-sm">Trips</.link></li>
@@ -56,10 +58,36 @@ defmodule PackheavyWeb.Layouts do
           <% end %>
         </ul>
       </div>
+
+      <%!-- Mobile / narrow screens: primary links + hamburger for the rest --%>
+      <div class="flex-none md:hidden flex items-center gap-1">
+        <.link navigate={~p"/items"} class="btn btn-ghost btn-sm">Items</.link>
+        <.link navigate={~p"/trips"} class="btn btn-ghost btn-sm">Trips</.link>
+        <details class="dropdown dropdown-end">
+          <summary class="btn btn-ghost btn-sm" aria-label="Open menu">
+            <.icon name="hero-bars-3" class="size-5" />
+          </summary>
+          <ul tabindex="0" class="dropdown-content menu bg-base-200 rounded-box z-[1] w-56 p-2 shadow mt-2 gap-1">
+            <li><.link navigate={~p"/kits"}>Kits</.link></li>
+            <li><.link navigate={~p"/cable-types"}>Cables</.link></li>
+            <li><.link navigate={~p"/battery-types"}>Batteries</.link></li>
+            <li class="border-t border-base-300 mt-1 pt-2">
+              <div class="flex justify-center hover:bg-transparent focus:bg-transparent p-1">
+                <.theme_toggle />
+              </div>
+            </li>
+            <%= if @current_user do %>
+              <li class="border-t border-base-300 mt-1 pt-1">
+                <.link href={~p"/sign-out"} method="delete">Sign out</.link>
+              </li>
+            <% end %>
+          </ul>
+        </details>
+      </div>
     </header>
 
     <main class="px-4 py-8 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-5xl space-y-4">
+      <div class="mx-auto max-w-5xl xl:max-w-7xl space-y-4">
         {render_slot(@inner_block)}
       </div>
     </main>
