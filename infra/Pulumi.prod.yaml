@@ -1,0 +1,14 @@
+config:
+  aws:region: ap-southeast-2
+  packheavy:domain: example.net
+  packheavy:subdomain: packheavy
+  packheavy:hostedZoneId: REPLACE_ME
+  packheavy:imageTag: latest
+  packheavy:running: "true"
+  packheavy:enableCognito: "false"
+  # When enableCognito is flipped to "true", set:
+  # packheavy:googleClientId:
+  #   secure: <pulumi config set --secret packheavy:googleClientId ...>
+  # packheavy:googleClientSecret:
+  #   secure: <pulumi config set --secret packheavy:googleClientSecret ...>
+  # packheavy:adminEmail: ben.kolera@gmail.com

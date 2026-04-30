@@ -1,5 +1,23 @@
 import Config
 
+# Build a Postgres URL from the four DATABASE_* env vars (host, user,
+# password, name + optional port). Returns nil if any are missing.
+# Used in prod when ECS injects parts via secrets references rather than
+# a single URL — the ECS task wires DATABASE_PASSWORD from the RDS-managed
+# SecretsManager secret using its `password` JSON key.
+build_database_url = fn ->
+  with host when is_binary(host) <- System.get_env("DATABASE_HOST"),
+       user when is_binary(user) <- System.get_env("DATABASE_USER"),
+       password when is_binary(password) <- System.get_env("DATABASE_PASSWORD"),
+       name when is_binary(name) <- System.get_env("DATABASE_NAME") do
+    port = System.get_env("DATABASE_PORT", "5432")
+    encoded_pw = URI.encode_www_form(password)
+    "ecto://#{user}:#{encoded_pw}@#{host}:#{port}/#{name}"
+  else
+    _ -> nil
+  end
+end
+
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
 # system starts, so it is typically used to load production configuration
@@ -26,9 +44,12 @@ config :packheavy, PackheavyWeb.Endpoint,
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
+      build_database_url.() ||
       raise """
-      environment variable DATABASE_URL is missing.
-      For example: ecto://USER:PASS@HOST/DATABASE
+      environment variable DATABASE_URL is missing, and DATABASE_HOST /
+      DATABASE_USER / DATABASE_PASSWORD / DATABASE_NAME aren't all set
+      either. Provide DATABASE_URL directly (ecto://USER:PASS@HOST/DB)
+      or set the four parts and we'll assemble it.
       """
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []

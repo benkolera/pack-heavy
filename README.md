@@ -4,13 +4,10 @@
 
 # packheavy
 
-> ⚠️ **Local-only — do not deploy this anywhere public.**
-> The bootstrap script (`priv/scripts/create_user.exs`) seeds a hardcoded
-> account (`ben@local` / `password123`), the password-reset / magic-link
-> auth flows are stubbed out, secrets in `config/runtime.exs` aren't
-> production-ready, and there's no rate limiting, email delivery, HTTPS
-> enforcement, or any of the other hardening you'd want for a multi-user
-> deployment. Run on `localhost` only until that gets sorted.
+> ⚠️ **Single-user only.** The bootstrap script
+> (`priv/scripts/create_user.exs`) seeds one account; sign-up is disabled
+> in the router. Password-reset / magic-link auth flows are stubbed out.
+> Don't open this to anyone but yourself.
 
 A personal hiking gear inventory and trip planner. Catalogue every item you
 own (with weight, brand, category-specific data), bundle them into reusable
@@ -23,6 +20,12 @@ Built with [Phoenix LiveView][lv] and the [Ash framework][ash].
 
 [lv]: https://hexdocs.pm/phoenix_live_view
 [ash]: https://hexdocs.pm/ash
+
+## Deploy
+
+The app deploys to AWS ECS Fargate behind an ALB with managed Postgres
+on RDS, all orchestrated by Pulumi. See [`infra/README.md`](infra/README.md)
+for the runbook (first-time setup, image build/push, hibernation).
 
 ## Screenshots
 

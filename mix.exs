@@ -12,7 +12,18 @@ defmodule Packheavy.MixProject do
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
-      consolidate_protocols: Mix.env() != :dev
+      consolidate_protocols: Mix.env() != :dev,
+      releases: releases()
+    ]
+  end
+
+  defp releases do
+    [
+      packheavy: [
+        include_executables_for: [:unix],
+        applications: [packheavy: :permanent],
+        steps: [:assemble, :tar]
+      ]
     ]
   end
 

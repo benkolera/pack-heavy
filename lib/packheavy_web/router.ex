@@ -21,6 +21,11 @@ defmodule PackheavyWeb.Router do
     plug :set_actor, :user
   end
 
+  # ALB target group health check — outside :browser, no auth, no session.
+  scope "/", PackheavyWeb do
+    get "/health", HealthController, :index
+  end
+
   scope "/", PackheavyWeb do
     pipe_through :browser
 
@@ -48,9 +53,10 @@ defmodule PackheavyWeb.Router do
     auth_routes AuthController, Packheavy.Accounts.User, path: "/auth"
     sign_out_route AuthController
 
-    # Remove these if you'd like to use your own authentication views
-    sign_in_route register_path: "/register",
-                  auth_routes_prefix: "/auth",
+    # Single-user app: no self-signup. `register_path` omitted so /register
+    # is not generated. Seed the lone user via priv/scripts/create_user.exs
+    # against the prod RDS endpoint (see infra/README.md).
+    sign_in_route auth_routes_prefix: "/auth",
                   on_mount: [{PackheavyWeb.LiveUserAuth, :live_no_user}],
                   overrides: [
                     PackheavyWeb.AuthOverrides,

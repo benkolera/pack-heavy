@@ -1,0 +1,11 @@
+name: packheavy-infra
+description: Packheavy AWS infrastructure (ECS Fargate + RDS + VPC endpoints)
+runtime:
+  name: nodejs
+  options:
+    typescript: true
+    packagemanager: npm
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: ""
