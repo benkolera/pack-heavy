@@ -23,6 +23,21 @@ infra/
     └── edge.ts               ← ACM cert, ALB, listeners, A-record
 ```
 
+## State backend
+
+Pulumi state lives in S3 + KMS in your own AWS account — no Pulumi Cloud
+involved. The bucket and KMS key are bootstrapped by a one-shot script
+before the first stack init, since Pulumi can't store its state in
+resources it's also managing.
+
+```sh
+./scripts/bootstrap-state.sh
+```
+
+Idempotent — re-running is safe. Output prints the `pulumi login` and
+`pulumi stack init` commands to use, with the bucket name (suffixed by
+your AWS account ID) and KMS alias filled in.
+
 ## First-time setup
 
 1. **AWS credentials** — make sure your CLI has access to the target account
@@ -36,16 +51,25 @@ infra/
    cd infra
    npm install
    ```
-4. **Init the stack**:
+4. **Bootstrap the state backend** (once per AWS account):
    ```sh
-   pulumi stack init prod
+   ./scripts/bootstrap-state.sh
    ```
-5. **Preview**:
+5. **Log in to the S3 backend** (use the bucket name printed by step 4):
+   ```sh
+   pulumi login "s3://packheavy-pulumi-state-<account-id>-ap-southeast-2?region=ap-southeast-2"
+   ```
+6. **Init the stack** (using KMS for secret encryption):
+   ```sh
+   pulumi stack init prod \
+     --secrets-provider="awskms://alias/packheavy-pulumi?region=ap-southeast-2"
+   ```
+7. **Preview**:
    ```sh
    pulumi preview
    ```
    Eyeball every resource. Should be ~25 resources.
-6. **Apply**:
+8. **Apply**:
    ```sh
    pulumi up
    ```
