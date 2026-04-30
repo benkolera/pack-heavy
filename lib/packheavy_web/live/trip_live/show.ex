@@ -252,11 +252,49 @@ defmodule PackheavyWeb.TripLive.Show do
       |> Enum.sum()
     end
 
+    section_capacity = fn cat ->
+      total =
+        grouped
+        |> Map.get(cat, [])
+        |> Enum.map(fn ti ->
+          case ti.item && ti.item.category_data do
+            %Ash.Union{value: %Packheavy.Inventory.Item.Pack{volume_l: v}} when is_number(v) ->
+              v * ti.qty
+
+            _ ->
+              0
+          end
+        end)
+        |> Enum.sum()
+
+      if total > 0, do: total, else: nil
+    end
+
+    section_calories = fn cat ->
+      total =
+        grouped
+        |> Map.get(cat, [])
+        |> Enum.map(fn ti ->
+          case ti.item && ti.item.category_data do
+            %Ash.Union{value: %Packheavy.Inventory.Item.Food{calories: c}} when is_integer(c) ->
+              c * ti.qty
+
+            _ ->
+              0
+          end
+        end)
+        |> Enum.sum()
+
+      if total > 0, do: total, else: nil
+    end
+
     assigns =
       assigns
       |> assign(:grouped, grouped)
       |> assign(:visible_categories, visible_categories)
       |> assign(:section_weight, section_weight)
+      |> assign(:section_capacity, section_capacity)
+      |> assign(:section_calories, section_calories)
 
     ~H"""
     <% report = @trip.validation_report || %{errors: [], warnings: [], totals: %{}} %>
@@ -289,8 +327,11 @@ defmodule PackheavyWeb.TripLive.Show do
             </div>
           </div>
           <div class="summary-card card bg-base-200 p-3">
-            <div class="text-xs opacity-70">Water capacity</div>
-            <div class="text-lg font-semibold tabular-nums">{Map.get(totals, :water_ml, 0)} ml</div>
+            <div class="text-xs opacity-70">Carrying capacity</div>
+            <div class="text-lg font-semibold tabular-nums">{format_capacity(Map.get(totals, :pack_volume_l, 0))} L</div>
+            <div class="text-xs opacity-50">
+              + {Map.get(totals, :water_ml, 0)} ml water
+            </div>
           </div>
           <div class="summary-card card bg-base-200 p-3">
             <div class="text-xs opacity-70">Power</div>
@@ -331,7 +372,9 @@ defmodule PackheavyWeb.TripLive.Show do
         <section :for={{cat, label} <- @visible_categories}>
           <div class="flex justify-between items-baseline border-b border-success pb-0.5 mb-1">
             <h3 class="text-success text-xs font-bold uppercase tracking-wide">{label}</h3>
-            <span class="text-success text-xs tabular-nums opacity-80">{@section_weight.(cat)} g</span>
+            <span class="text-success text-xs tabular-nums opacity-80">
+              <span :if={cap = @section_capacity.(cat)} class="mr-2">Σ {format_capacity(cap)} L</span><span :if={kcal = @section_calories.(cat)} class="mr-2">Σ {kcal} kcal</span>{@section_weight.(cat)} g
+            </span>
           </div>
           <ul class="divide-y divide-base-300">
             <li :for={ti <- Map.get(@grouped, cat, [])} class="flex items-center py-2 px-1 gap-2">
@@ -339,6 +382,8 @@ defmodule PackheavyWeb.TripLive.Show do
                 <span :if={ti.item.brand} class="opacity-60 mr-1">{ti.item.brand}</span>{ti.item.title}
                 <span :if={ti.source == :kit} class="badge badge-xs ml-1">kit</span>
               </span>
+              <span :if={cap = pack_capacity(ti)} class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">{format_capacity(cap)} L</span>
+              <span :if={kcal = food_calories(ti)} class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">{kcal} kcal</span>
               <span class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">
                 <%= if ti.qty > 1 do %>
                   {ti.item.weight_g || 0} g × {ti.qty}
@@ -403,6 +448,32 @@ defmodule PackheavyWeb.TripLive.Show do
     </div>
     """
   end
+
+  defp food_calories(ti) do
+    case ti.item && ti.item.category_data do
+      %Ash.Union{value: %Packheavy.Inventory.Item.Food{calories: c}} when is_integer(c) ->
+        c
+
+      _ ->
+        nil
+    end
+  end
+
+  defp pack_capacity(ti) do
+    case ti.item && ti.item.category_data do
+      %Ash.Union{value: %Packheavy.Inventory.Item.Pack{volume_l: v}} when is_number(v) ->
+        v
+
+      _ ->
+        nil
+    end
+  end
+
+  defp format_capacity(v) when is_float(v) do
+    if v == Float.round(v), do: Integer.to_string(trunc(v)), else: :erlang.float_to_binary(v, decimals: 1)
+  end
+
+  defp format_capacity(v), do: to_string(v)
 
   defp category_order do
     [

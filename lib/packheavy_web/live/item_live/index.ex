@@ -260,8 +260,9 @@ defmodule PackheavyWeb.ItemLive.Index do
 
       <div class="space-y-6">
         <section :for={{cat, label} <- @categories}>
-          <div class="flex justify-between items-center border-b-2 border-success pb-1 mb-1">
+          <div class="flex justify-between items-center border-b-2 border-success pb-1 mb-1 gap-2">
             <h2 class="text-success font-bold uppercase tracking-wide text-sm">{label}</h2>
+            <span :if={summary = category_summary(cat, Map.get(@grouped, cat, []))} class="text-success text-xs tabular-nums opacity-80 ml-auto">{summary}</span>
             <.link patch={~p"/items/new?category=#{cat}"} class="no-print text-success text-xl leading-none" title={"Add #{label}"}>+</.link>
           </div>
           <%= case Map.get(@grouped, cat, []) do %>
@@ -364,6 +365,25 @@ defmodule PackheavyWeb.ItemLive.Index do
   end
 
   defp category_extra_secondary(_), do: nil
+
+  defp category_summary(:pack, items) do
+    total =
+      items
+      |> Enum.map(fn item ->
+        case item.category_data do
+          %Ash.Union{value: %Packheavy.Inventory.Item.Pack{volume_l: v}} when is_number(v) ->
+            v * (item.qty || 1)
+
+          _ ->
+            0
+        end
+      end)
+      |> Enum.sum()
+
+    if total > 0, do: "Σ #{format_volume(total)} L", else: nil
+  end
+
+  defp category_summary(_, _), do: nil
 
   defp format_volume(v) when is_float(v) do
     if v == Float.round(v), do: Integer.to_string(trunc(v)), else: :erlang.float_to_binary(v, decimals: 1)

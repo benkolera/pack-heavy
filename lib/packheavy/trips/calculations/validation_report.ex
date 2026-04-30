@@ -122,7 +122,8 @@ defmodule Packheavy.Trips.Calculations.ValidationReport do
 
             {tot, errs, warns}
 
-          %Pack{} ->
+          %Pack{volume_l: v} ->
+            tot = Map.update!(tot, :pack_volume_l, &(&1 + (v || 0) * qty))
             {tot, errs, warns}
 
           %Power{capacity_mah: mah, usb_ports: ports} ->
@@ -157,6 +158,7 @@ defmodule Packheavy.Trips.Calculations.ValidationReport do
       water_weight_g: 0,
       calories: 0,
       water_ml: 0,
+      pack_volume_l: 0,
       power_mah: 0,
       usb_ports: 0,
       electronics: 0
