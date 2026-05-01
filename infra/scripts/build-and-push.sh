@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #
-# Build the app's ARM64 Docker image and push it to ECR. Reads the
-# repo URL from `pulumi stack output ecrRepositoryUrl` so this only
-# works after the registry is provisioned.
+# Build the app's ARM64 Docker image, push it to ECR, set the new tag
+# in Pulumi config, and run `pulumi up` to roll the ECS service.
+# Reads the repo URL from `pulumi stack output ecrRepositoryUrl` so
+# this only works after the registry is provisioned.
 #
 # Usage:
 #   ./infra/scripts/build-and-push.sh           # tag = short git SHA
@@ -12,6 +13,7 @@
 #   AWS_REGION  (default: ap-southeast-2)
 #   STACK       (default: prod)
 #   PLATFORM    (default: linux/arm64 — matches Fargate runtimePlatform)
+#   SKIP_DEPLOY (set to any value to skip `pulumi config set` + `pulumi up`)
 
 set -euo pipefail
 
@@ -54,10 +56,19 @@ docker buildx build \
 echo "→ Pushing"
 docker push "${REPO_URL}:${TAG}"
 
-cat <<EOF
+if [[ -n "${SKIP_DEPLOY:-}" ]]; then
+  cat <<EOF
 
-Done. To deploy this image:
+Done (deploy skipped). To roll out manually:
 
   pulumi -C ${INFRA_DIR} config set packheavy:imageTag ${TAG}
   pulumi -C ${INFRA_DIR} up
 EOF
+  exit 0
+fi
+
+echo "→ Setting packheavy:imageTag=${TAG}"
+pulumi -C "${INFRA_DIR}" config set packheavy:imageTag "${TAG}" --stack "${STACK}"
+
+echo "→ pulumi up"
+pulumi -C "${INFRA_DIR}" up --stack "${STACK}" --yes

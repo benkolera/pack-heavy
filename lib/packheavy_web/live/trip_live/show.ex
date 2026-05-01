@@ -100,6 +100,16 @@ defmodule PackheavyWeb.TripLive.Show do
     {:noreply, socket |> assign(:tab, :pack) |> reload()}
   end
 
+  def handle_event("enable_sharing", _, socket) do
+    Trips.enable_trip_sharing!(socket.assigns.trip, actor: socket.assigns.current_user)
+    {:noreply, socket |> put_flash(:info, "Public link enabled.") |> reload()}
+  end
+
+  def handle_event("disable_sharing", _, socket) do
+    Trips.disable_trip_sharing!(socket.assigns.trip, actor: socket.assigns.current_user)
+    {:noreply, socket |> put_flash(:info, "Public link revoked.") |> reload()}
+  end
+
   def handle_event("complete", _, socket) do
     socket.assigns.trip
     |> Ash.Changeset.for_update(:complete)
@@ -186,11 +196,12 @@ defmodule PackheavyWeb.TripLive.Show do
     ~H"""
     <Layouts.app flash={@flash} current_user={@current_user}>
       <.link navigate={~p"/trips"} class="link text-sm">← Trips</.link>
-      <div class="flex justify-between items-center">
+      <div class="flex flex-wrap justify-between items-center gap-2">
         <h1 class="text-2xl font-bold">
           {@trip.name}
           <span class="badge ml-2">{@trip.state}</span>
         </h1>
+        <.share_panel trip={@trip} socket={@socket} />
       </div>
 
       <div role="tablist" class="tabs tabs-boxed">
@@ -221,6 +232,69 @@ defmodule PackheavyWeb.TripLive.Show do
         />
       <% end %>
     </Layouts.app>
+    """
+  end
+
+  attr :trip, :any, required: true
+  attr :socket, :any, required: true
+
+  defp share_panel(assigns) do
+    share_url =
+      if assigns.trip.share_token do
+        url(assigns.socket, ~p"/share/trip/#{assigns.trip.share_token}")
+      end
+
+    assigns = assign(assigns, :share_url, share_url)
+
+    ~H"""
+    <div class="flex items-center gap-1 text-sm print:hidden">
+      <%= if @share_url do %>
+        <button
+          type="button"
+          id={"copy-share-#{@trip.id}"}
+          phx-hook=".CopyShareLink"
+          data-url={@share_url}
+          class="btn btn-primary btn-xs"
+          title={@share_url}
+        >
+          Copy share link
+        </button>
+        <button
+          type="button"
+          phx-click="disable_sharing"
+          data-confirm="Stop sharing? The current link will stop working."
+          class="btn btn-ghost btn-xs"
+          title="Revoke the public link"
+        >
+          ×
+        </button>
+      <% else %>
+        <button type="button" phx-click="enable_sharing" class="btn btn-ghost btn-xs">
+          Share
+        </button>
+      <% end %>
+      <script :type={Phoenix.LiveView.ColocatedHook} name=".CopyShareLink">
+        export default {
+          mounted() {
+            this.el.addEventListener("click", () => {
+              const url = this.el.dataset.url
+              const ok = () => {
+                const original = this.el.textContent
+                this.el.textContent = "Copied!"
+                setTimeout(() => { this.el.textContent = original }, 1500)
+              }
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(ok).catch(() => {
+                  prompt("Copy this link:", url)
+                })
+              } else {
+                prompt("Copy this link:", url)
+              }
+            })
+          }
+        }
+      </script>
+    </div>
     """
   end
 
@@ -414,9 +488,13 @@ defmodule PackheavyWeb.TripLive.Show do
     """
   end
 
+  # `weight_breakdown`, `food_calories`, `pack_capacity`, and
+  # `format_capacity` are public so PackheavyWeb.PublicTripLive can
+  # render the same summary widgets without duplicating logic.
+
   attr :trip, :any, required: true
 
-  defp weight_breakdown(assigns) do
+  def weight_breakdown(assigns) do
     ~H"""
     <% report = @trip.validation_report || %{totals: %{}} %>
     <% totals = report.totals || %{} %>
@@ -449,7 +527,7 @@ defmodule PackheavyWeb.TripLive.Show do
     """
   end
 
-  defp food_calories(ti) do
+  def food_calories(ti) do
     case ti.item && ti.item.category_data do
       %Ash.Union{value: %Packheavy.Inventory.Item.Food{calories: c}} when is_integer(c) ->
         c
@@ -459,7 +537,7 @@ defmodule PackheavyWeb.TripLive.Show do
     end
   end
 
-  defp pack_capacity(ti) do
+  def pack_capacity(ti) do
     case ti.item && ti.item.category_data do
       %Ash.Union{value: %Packheavy.Inventory.Item.Pack{volume_l: v}} when is_number(v) ->
         v
@@ -469,11 +547,11 @@ defmodule PackheavyWeb.TripLive.Show do
     end
   end
 
-  defp format_capacity(v) when is_float(v) do
+  def format_capacity(v) when is_float(v) do
     if v == Float.round(v), do: Integer.to_string(trunc(v)), else: :erlang.float_to_binary(v, decimals: 1)
   end
 
-  defp format_capacity(v), do: to_string(v)
+  def format_capacity(v), do: to_string(v)
 
   defp category_order do
     [

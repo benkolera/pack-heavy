@@ -26,6 +26,16 @@ defmodule PackheavyWeb.Router do
     get "/health", HealthController, :index
   end
 
+  # Public read-only trip share. Goes through :browser so LV works,
+  # but is OUTSIDE the ash_authentication_live_session so anonymous
+  # users can hit it. Authorization is enforced by the
+  # :read_by_share_token action's policy bypass + filter on the Trip
+  # resource — see lib/packheavy/trips/trip.ex.
+  scope "/share", PackheavyWeb do
+    pipe_through :browser
+    live "/trip/:token", PublicTripLive, :show
+  end
+
   scope "/", PackheavyWeb do
     pipe_through :browser
 

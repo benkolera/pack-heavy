@@ -3,6 +3,7 @@ defmodule Packheavy.Trips.Trip do
     otp_app: :packheavy,
     domain: Packheavy.Trips,
     data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer],
     extensions: [AshStateMachine]
 
   postgres do
@@ -21,6 +22,25 @@ defmodule Packheavy.Trips.Trip do
     end
   end
 
+  # The public share endpoint is the only action accessible without an
+  # actor. Its filter requires a non-nil share_token AND a match — no
+  # enumeration possible. Every other action requires the actor to own
+  # the trip (or, for create, just to be present — `relate_actor(:user)`
+  # sets user_id from the actor itself).
+  policies do
+    bypass action(:read_by_share_token) do
+      authorize_if always()
+    end
+
+    policy action_type(:create) do
+      authorize_if actor_present()
+    end
+
+    policy action_type([:read, :update, :destroy]) do
+      authorize_if expr(user_id == ^actor(:id))
+    end
+  end
+
   actions do
     defaults [:read, :destroy, update: [:name, :start_date, :end_date]]
 
@@ -28,6 +48,38 @@ defmodule Packheavy.Trips.Trip do
       primary? true
       accept [:name, :start_date, :end_date]
       change relate_actor(:user)
+    end
+
+    read :read_by_share_token do
+      description "Public read of a trip via its opaque share token"
+      argument :share_token, :string, allow_nil?: false
+      get? true
+      filter expr(share_token == ^arg(:share_token) and not is_nil(share_token))
+    end
+
+    update :enable_sharing do
+      description "Generate (if absent) a URL-safe random share token"
+      require_atomic? false
+
+      change fn changeset, _ctx ->
+        case Ash.Changeset.get_attribute(changeset, :share_token) do
+          nil ->
+            token = :crypto.strong_rand_bytes(16) |> Base.url_encode64(padding: false)
+            Ash.Changeset.force_change_attribute(changeset, :share_token, token)
+
+          _existing ->
+            changeset
+        end
+      end
+    end
+
+    update :disable_sharing do
+      description "Clear the share token; existing public links stop working"
+      require_atomic? false
+
+      change fn changeset, _ctx ->
+        Ash.Changeset.force_change_attribute(changeset, :share_token, nil)
+      end
     end
 
     update :start_packing do
@@ -132,7 +184,16 @@ defmodule Packheavy.Trips.Trip do
     attribute :name, :string, allow_nil?: false, public?: true
     attribute :start_date, :date, public?: true
     attribute :end_date, :date, public?: true
+    # Opaque random token for the public read-only share URL. Nullable
+    # — a trip is only shareable while the owner has explicitly enabled
+    # it. Postgres treats each NULL as distinct, so the unique index
+    # below behaves like a partial unique on the non-null values.
+    attribute :share_token, :string, allow_nil?: true, public?: false
     timestamps()
+  end
+
+  identities do
+    identity :share_token, [:share_token]
   end
 
   relationships do

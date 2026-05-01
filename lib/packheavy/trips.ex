@@ -11,6 +11,9 @@ defmodule Packheavy.Trips do
       define :start_packing, action: :start_packing
       define :complete_trip, action: :complete
       define :add_kit, action: :add_kit, args: [:kit_id]
+      define :read_trip_by_share_token, action: :read_by_share_token, args: [:share_token]
+      define :enable_trip_sharing, action: :enable_sharing
+      define :disable_trip_sharing, action: :disable_sharing
     end
 
     resource Packheavy.Trips.TripItem do
