@@ -14,10 +14,10 @@ defmodule Packheavy.Backup do
 
   @version 1
 
-  # The gear resources don't have read-side policies — they rely on
-  # `relate_actor(:user)` for *writes*. So we filter explicitly here
-  # to keep export and wipe scoped to the current user, even on a
-  # multi-user instance.
+  # The resources now have actor-scoped policies, so `actor: user`
+  # alone would scope reads. The explicit user_id filter stays as
+  # defense-in-depth — if a future refactor loosened a policy, the
+  # filter still prevents this module from reading other users' rows.
   defp scoped_read!(resource, user) do
     resource
     |> Ash.Query.filter(user_id == ^user.id)
@@ -196,17 +196,30 @@ defmodule Packheavy.Backup do
     end
   end
 
-  defp remap_category(%{"type" => "cable", "cable_type_id" => old_id} = c, cable_map, _) do
-    new_id = Map.fetch!(cable_map, old_id)
-    %{c | "cable_type_id" => new_id}
-  end
+  # Remap any field whose name ends in `_cable_type_id` or
+  # `_battery_type_id` (with or without a prefix) to the newly-minted
+  # UUID. Covers `cable.cable_type_id`, `battery.battery_type_id`, and
+  # `electronic.charger_cable_type_id` / `electronic.battery_type_id`.
+  # Future variants that add a `*_cable_type_id` or `*_battery_type_id`
+  # field will be handled automatically.
+  defp remap_category(c, cable_map, battery_map) when is_map(c) do
+    Enum.into(c, %{}, fn
+      {k, old_id} when is_binary(k) and is_binary(old_id) ->
+        cond do
+          String.ends_with?(k, "cable_type_id") and Map.has_key?(cable_map, old_id) ->
+            {k, Map.fetch!(cable_map, old_id)}
 
-  defp remap_category(%{"type" => "battery", "battery_type_id" => old_id} = c, _, battery_map) do
-    new_id = Map.fetch!(battery_map, old_id)
-    %{c | "battery_type_id" => new_id}
-  end
+          String.ends_with?(k, "battery_type_id") and Map.has_key?(battery_map, old_id) ->
+            {k, Map.fetch!(battery_map, old_id)}
 
-  defp remap_category(c, _, _), do: c
+          true ->
+            {k, old_id}
+        end
+
+      kv ->
+        kv
+    end)
+  end
 
   defp seed_kits!(user, kits, item_map) do
     Enum.each(kits, fn kit ->

@@ -83,6 +83,25 @@ _shelter_item =
     opts
   )
 
+# Electronic with FK refs to BOTH cable and battery types — this used
+# to silently lose its links on restore because remap_category only
+# knew about the `:cable` and `:battery` variants.
+phone_item =
+  Ash.create!(
+    Inventory.Item,
+    %{
+      title: "Phone",
+      weight_g: 200,
+      category_data: %{
+        "type" => "electronic",
+        "power_source" => "built_in",
+        "charger_cable_type_id" => usbc.id,
+        "battery_type_id" => aa.id
+      }
+    },
+    opts
+  )
+
 _food_item =
   Ash.create!(
     Inventory.Item,
@@ -187,6 +206,31 @@ referenced_id =
 
 unless referenced_id in new_cable_type_ids do
   raise "cable_item.category_data.cable_type_id did not get remapped"
+end
+
+# Verify Electronic's nested FK refs (charger_cable_type_id +
+# battery_type_id) — the bug that prompted this test.
+electronic_after =
+  Enum.find(post_items, fn i ->
+    cd = i.category_data
+    val = if is_struct(cd, Ash.Union), do: cd.value, else: cd
+    is_struct(val, Inventory.Item.Electronic)
+  end)
+
+new_battery_type_ids = Enum.map(post_battery_types, & &1.id)
+
+elec_val =
+  case electronic_after.category_data do
+    %Ash.Union{value: v} -> v
+    v -> v
+  end
+
+unless elec_val.charger_cable_type_id in new_cable_type_ids do
+  raise "electronic.charger_cable_type_id did not get remapped (got #{inspect(elec_val.charger_cable_type_id)})"
+end
+
+unless elec_val.battery_type_id in new_battery_type_ids do
+  raise "electronic.battery_type_id did not get remapped (got #{inspect(elec_val.battery_type_id)})"
 end
 
 # Verify kit_item FK remap

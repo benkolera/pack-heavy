@@ -23,10 +23,19 @@ defmodule PackheavyWeb.PublicTripLive do
 
   @impl true
   def mount(%{"token" => token}, _session, socket) do
-    case Trips.read_trip_by_share_token(token,
-           load: [:validation_report, trip_items: [:item]]
-         ) do
+    # Two-step: the policy bypass on `:read_by_share_token` confirms
+    # the share token matches a trip; once that's authorized we load
+    # the children with `authorize?: false`. The TripItem / Item
+    # policies are actor-scoped (no anonymous read), but this anonymous
+    # request *was* authorized at the entry point — so re-running their
+    # checks here is wrong, not safer. Same idiom as Trip.add_kit's
+    # internal `Ash.create!(... authorize?: false)` after the outer
+    # action passes.
+    case Trips.read_trip_by_share_token(token) do
       {:ok, %{} = trip} ->
+        trip =
+          Ash.load!(trip, [:validation_report, trip_items: [:item]], authorize?: false)
+
         {:ok,
          socket
          |> assign(:page_title, "#{trip.name} · packheavy")
