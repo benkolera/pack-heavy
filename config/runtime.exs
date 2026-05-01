@@ -94,6 +94,28 @@ if config_env() == :prod do
       System.get_env("TOKEN_SIGNING_SECRET") ||
         raise("Missing environment variable `TOKEN_SIGNING_SECRET`!")
 
+  # Cognito (Google SSO via hosted UI). All five env vars are required
+  # in prod — the user.ex resource has the oauth2 :cognito strategy
+  # compiled in unconditionally, so any missing config would surface
+  # as a runtime auth failure rather than a clearer boot-time error.
+  cognito_domain =
+    System.get_env("COGNITO_DOMAIN") ||
+      raise("Missing environment variable `COGNITO_DOMAIN`!")
+
+  cognito_client_id =
+    System.get_env("COGNITO_CLIENT_ID") ||
+      raise("Missing environment variable `COGNITO_CLIENT_ID`!")
+
+  cognito_client_secret =
+    System.get_env("COGNITO_CLIENT_SECRET") ||
+      raise("Missing environment variable `COGNITO_CLIENT_SECRET`!")
+
+  config :packheavy,
+    cognito_base_url: cognito_domain,
+    cognito_client_id: cognito_client_id,
+    cognito_client_secret: cognito_client_secret,
+    cognito_redirect_uri: "https://#{host}/auth"
+
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key

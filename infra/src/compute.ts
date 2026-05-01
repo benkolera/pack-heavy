@@ -1,8 +1,9 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
-import type { AppSecrets } from "./secrets";
-import type { DatabaseResult } from "./database";
+import type { AppSecrets } from "./secrets.ts";
+import type { DatabaseResult } from "./database.ts";
+import type { IdentityResult } from "./identity.ts";
 
 interface Args {
     running: boolean;
@@ -13,6 +14,7 @@ interface Args {
     repository: aws.ecr.Repository;
     appSecrets: AppSecrets;
     database: DatabaseResult;
+    identity: IdentityResult;
 }
 
 export interface ComputeResult {
@@ -65,15 +67,16 @@ export function buildCompute(args: Args): ComputeResult {
                 args.appSecrets.secretKeyBase.arn,
                 args.appSecrets.tokenSigningSecret.arn,
                 args.database.masterUserSecretArn,
+                args.identity.clientSecretArn,
             ])
-            .apply(([skb, tss, master]) =>
+            .apply(([skb, tss, master, cog]) =>
                 JSON.stringify({
                     Version: "2012-10-17",
                     Statement: [
                         {
                             Effect: "Allow",
                             Action: ["secretsmanager:GetSecretValue"],
-                            Resource: [skb, tss, master ?? ""].filter(Boolean),
+                            Resource: [skb, tss, master ?? "", cog ?? ""].filter(Boolean),
                         },
                     ],
                 }),
@@ -141,31 +144,54 @@ export function buildCompute(args: Args): ComputeResult {
                 args.database.name,
                 args.database.user,
                 logGroup.name,
+                args.identity.userPoolId,
+                args.identity.clientId,
+                args.identity.clientSecretArn,
+                args.identity.domain,
+                args.identity.issuer,
             ])
-            .apply(([img, skbArn, tssArn, masterArn, dbHost, dbPort, dbName, dbUser, lg]) =>
-                JSON.stringify([
+            .apply(([
+                img, skbArn, tssArn, masterArn, dbHost, dbPort, dbName, dbUser, lg,
+                cogPoolId, cogClientId, cogSecretArn, cogDomain, cogIssuer,
+            ]) => {
+                const baseEnv = [
+                    { name: "PHX_SERVER", value: "true" },
+                    { name: "PHX_HOST", value: args.fqdn },
+                    { name: "PORT", value: "4000" },
+                    { name: "POOL_SIZE", value: "10" },
+                    { name: "DATABASE_HOST", value: dbHost ?? "" },
+                    { name: "DATABASE_PORT", value: String(dbPort ?? 5432) },
+                    { name: "DATABASE_NAME", value: dbName ?? "" },
+                    { name: "DATABASE_USER", value: dbUser ?? "" },
+                ];
+                const cognitoEnv = cogPoolId
+                    ? [
+                          { name: "COGNITO_USER_POOL_ID", value: cogPoolId },
+                          { name: "COGNITO_CLIENT_ID", value: cogClientId ?? "" },
+                          { name: "COGNITO_DOMAIN", value: cogDomain ?? "" },
+                          { name: "COGNITO_ISSUER", value: cogIssuer ?? "" },
+                      ]
+                    : [];
+
+                const baseSecrets = [
+                    { name: "SECRET_KEY_BASE", valueFrom: skbArn },
+                    { name: "TOKEN_SIGNING_SECRET", valueFrom: tssArn },
+                    // RDS-managed master secret is JSON; we only
+                    // want the password key (user is already in env).
+                    { name: "DATABASE_PASSWORD", valueFrom: `${masterArn}:password::` },
+                ];
+                const cognitoSecrets = cogSecretArn
+                    ? [{ name: "COGNITO_CLIENT_SECRET", valueFrom: cogSecretArn }]
+                    : [];
+
+                return JSON.stringify([
                     {
                         name: "app",
                         image: img,
                         essential: true,
                         portMappings: [{ containerPort: 4000, protocol: "tcp" }],
-                        environment: [
-                            { name: "PHX_SERVER", value: "true" },
-                            { name: "PHX_HOST", value: args.fqdn },
-                            { name: "PORT", value: "4000" },
-                            { name: "POOL_SIZE", value: "10" },
-                            { name: "DATABASE_HOST", value: dbHost ?? "" },
-                            { name: "DATABASE_PORT", value: String(dbPort ?? 5432) },
-                            { name: "DATABASE_NAME", value: dbName ?? "" },
-                            { name: "DATABASE_USER", value: dbUser ?? "" },
-                        ],
-                        secrets: [
-                            { name: "SECRET_KEY_BASE", valueFrom: skbArn },
-                            { name: "TOKEN_SIGNING_SECRET", valueFrom: tssArn },
-                            // RDS-managed master secret is JSON; we only
-                            // want the password key (user is already in env).
-                            { name: "DATABASE_PASSWORD", valueFrom: `${masterArn}:password::` },
-                        ],
+                        environment: [...baseEnv, ...cognitoEnv],
+                        secrets: [...baseSecrets, ...cognitoSecrets],
                         logConfiguration: {
                             logDriver: "awslogs",
                             options: {
@@ -185,8 +211,8 @@ export function buildCompute(args: Args): ComputeResult {
                             startPeriod: 30,
                         },
                     },
-                ]),
-            ),
+                ]);
+            }),
     });
 
     const result: ComputeResult = {

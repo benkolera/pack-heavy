@@ -22,8 +22,42 @@ defmodule Packheavy.Accounts.User do
     end
 
     strategies do
-      password :password do
-        identity_field :email
+      # Password strategy is dev/test only. The prod release is built
+      # with MIX_ENV=prod, so this branch is skipped at compile time
+      # and the password DSL never lands in the release — there is no
+      # /sign-in form, no `register_with_password` action, no way to
+      # set hashed_password from the running app. Prod auth is Cognito
+      # → Google only.
+      if Mix.env() in [:dev, :test] do
+        password :password do
+          identity_field :email
+        end
+      end
+
+      # Cognito-fronted Google SSO. Registration is enabled so the
+      # very first sign-in creates the user; the user pool's
+      # pre-sign-up Lambda allowlist (set to packheavy:adminEmail in
+      # the Pulumi stack) ensures only that one email can ever land
+      # here.
+      oauth2 :cognito do
+        client_id Packheavy.Secrets
+        client_secret Packheavy.Secrets
+        base_url Packheavy.Secrets
+        redirect_uri Packheavy.Secrets
+        authorize_url fn _, _ -> {:ok, "/oauth2/authorize"} end
+        token_url fn _, _ -> {:ok, "/oauth2/token"} end
+        user_url fn _, _ -> {:ok, "/oauth2/userInfo"} end
+        authorization_params scope: "openid profile email"
+        register_action_name :register_with_cognito
+        # Disabled because:
+        #   1. The password strategy only exists in dev/test builds.
+        #   2. Cognito's pre-sign-up Lambda allowlist (adminEmail) is
+        #      the actual takeover prevention — only one Google
+        #      account can ever produce a Cognito user.
+        # The default-on guard would require a confirmation add-on on
+        # the password strategy, which is overkill for a single-user,
+        # dev-only password path.
+        prevent_hijacking? false
       end
     end
   end
@@ -49,6 +83,21 @@ defmodule Packheavy.Accounts.User do
       argument :email, :ci_string, allow_nil?: false
       filter expr(email == ^arg(:email))
     end
+
+    create :register_with_cognito do
+      description "Upsert-by-email registration triggered by a Cognito OAuth callback"
+      argument :user_info, :map, allow_nil?: false
+      argument :oauth_tokens, :map, allow_nil?: false
+      upsert? true
+      upsert_identity :unique_email
+
+      change AshAuthentication.GenerateTokenChange
+
+      change fn changeset, _ctx ->
+        user_info = Ash.Changeset.get_argument(changeset, :user_info)
+        Ash.Changeset.change_attribute(changeset, :email, user_info["email"])
+      end
+    end
   end
 
   policies do
@@ -65,8 +114,10 @@ defmodule Packheavy.Accounts.User do
       public? true
     end
 
+    # Nullable so Cognito-only users (no local password) can exist.
+    # Password strategy still validates presence at sign-in time.
     attribute :hashed_password, :string do
-      allow_nil? false
+      allow_nil? true
       sensitive? true
     end
   end

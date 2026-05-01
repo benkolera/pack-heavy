@@ -18,7 +18,7 @@ infra/
     ├── secrets.ts            ← random app secrets (SECRET_KEY_BASE etc)
     ├── database.ts           ← RDS db.t4g.micro Postgres
     ├── registry.ts           ← ECR repository
-    ├── identity.ts           ← Cognito (gated, currently stubbed)
+    ├── identity.ts           ← Cognito user pool + Google IDP + pre-sign-up Lambda allowlist (gated on packheavy:enableCognito)
     ├── compute.ts            ← ECS cluster, task def, service, IAM
     └── edge.ts               ← ACM cert, ALB, listeners, A-record
 ```
@@ -111,20 +111,13 @@ aws ecs describe-services --cluster packheavy --services packheavy --region ap-s
 
 ## Seed the user account (one-time)
 
-After the first successful deploy, shell into the running task and seed
-your account:
-```sh
-TASK=$(aws ecs list-tasks --cluster packheavy --service-name packheavy \
-  --region ap-southeast-2 --query 'taskArns[0]' --output text)
+In prod, the password strategy is gated to `Mix.env() in [:dev, :test]`,
+so the release literally has no `register_with_password` action. Your
+prod user is created on **first Cognito sign-in** — the pre-sign-up
+Lambda allowlist (`packheavy:adminEmail`) ensures only that one address
+can ever land in the user pool, so first-sign-in upsert is the seed.
 
-aws ecs execute-command --cluster packheavy --region ap-southeast-2 \
-  --task "$TASK" --container app --interactive \
-  --command "/app/bin/packheavy eval 'Code.eval_file(\"/app/lib/packheavy-0.1.0/priv/scripts/create_user.exs\")'"
-```
-(adjust the path to `create_user.exs` based on the release layout — it's
-under `/app/lib/packheavy-<version>/priv/scripts/` inside the container.)
-
-You can also export `USER_EMAIL` and `USER_PASSWORD` before running.
+The `priv/scripts/create_user.exs` script remains for local dev only.
 
 ## Hibernate (park the app)
 
@@ -154,26 +147,45 @@ pulumi up
 RDS restores from the `packheavy-final` snapshot, ALB / TG / endpoints /
 ECS recreate. Takes ~10 min, dominated by RDS restore.
 
-## Adding Cognito SSO later
+## Cognito SSO (Google federation)
 
-When you want SSO with Google federation:
+The pieces are all wired — flipping `packheavy:enableCognito: "true"`
+provisions the user pool, hosted-UI domain, Google IDP, app client, and
+a pre-sign-up Lambda that allowlists exactly `packheavy:adminEmail`.
+A NAT gateway (running-gated, ~$32/mo) is added so the ECS task can
+reach the Cognito hosted-UI token endpoint, which has no PrivateLink.
 
-1. **Allow internet egress for the task** by either adding a NAT gateway
-   (a `running`-gated `aws.ec2.NatGateway` in `network.ts`) or moving
-   the ECS task to a public subnet with `assignPublicIp: true`.
-2. Create a Google OAuth client at console.cloud.google.com → Credentials.
-   Authorised redirect URI:
-   `https://packheavy-auth.auth.ap-southeast-2.amazoncognito.com/oauth2/idpresponse`
-3. ```sh
-   pulumi config set packheavy:enableCognito true
-   pulumi config set --secret packheavy:googleClientId <id>
-   pulumi config set --secret packheavy:googleClientSecret <secret>
-   pulumi config set packheavy:adminEmail <your-google-email>
+Order of operations (chicken-and-egg with Google OAuth's redirect URI):
+
+1. **First `pulumi up` with `enableCognito: false`** to provision
+   ALB / ACM cert / Route53 / etc.
+2. Create a Google OAuth client at
+   [console.cloud.google.com → Credentials](https://console.cloud.google.com/apis/credentials).
+   - Authorised JavaScript origin: `https://packheavy.benkolera.com`
+   - Authorised redirect URI: leave empty for now (you'll fill it in
+     step 5).
+3. **Set the three secrets**:
+   ```sh
+   pulumi config set --secret packheavy:adminEmail        ben.kolera@gmail.com
+   pulumi config set --secret packheavy:googleClientId    <from console>
+   pulumi config set --secret packheavy:googleClientSecret <from console>
+   pulumi config set        packheavy:enableCognito       true
    ```
-4. Implement `infra/src/identity.ts` per the comment block in that file.
-5. Update `lib/packheavy/accounts/user.ex` to add an `oauth2 :cognito`
-   strategy (see the AshAuthentication docs).
-6. `pulumi up` then redeploy the app image.
+4. **`pulumi up`** — this provisions Cognito, the hosted-UI domain,
+   and prints `cognitoGoogleRedirectUri` as a stack output, e.g.
+   `https://packheavy-auth-12345678.auth.ap-southeast-2.amazoncognito.com/oauth2/idpresponse`.
+5. **Add that exact URL** as an Authorised redirect URI on the Google
+   OAuth client. (No `pulumi up` needed.)
+6. Redeploy the app image so the new `COGNITO_*` env vars take effect:
+   ```sh
+   pulumi config set packheavy:imageTag $(git rev-parse --short HEAD)
+   pulumi up
+   ```
+7. Open `https://packheavy.benkolera.com`, click "Sign in with Cognito",
+   complete Google OAuth — first sign-in upserts the user.
+
+If anyone other than `adminEmail` tries to sign in, the pre-sign-up
+Lambda throws and Cognito refuses to create the user.
 
 ## Useful commands
 

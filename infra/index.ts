@@ -1,12 +1,12 @@
 import * as pulumi from "@pulumi/pulumi";
 
-import { buildNetwork } from "./src/network";
-import { buildSecrets } from "./src/secrets";
-import { buildDatabase } from "./src/database";
-import { buildRegistry } from "./src/registry";
-import { buildCompute } from "./src/compute";
-import { buildEdge } from "./src/edge";
-import { buildIdentity } from "./src/identity";
+import { buildNetwork } from "./src/network.ts";
+import { buildSecrets } from "./src/secrets.ts";
+import { buildDatabase } from "./src/database.ts";
+import { buildRegistry } from "./src/registry.ts";
+import { buildCompute } from "./src/compute.ts";
+import { buildEdge } from "./src/edge.ts";
+import { buildIdentity } from "./src/identity.ts";
 
 const cfg = new pulumi.Config("packheavy");
 
@@ -17,6 +17,10 @@ const config = {
     imageTag: cfg.require("imageTag"),
     running: cfg.requireBoolean("running"),
     enableCognito: cfg.requireBoolean("enableCognito"),
+    // Required only when enableCognito is true; identity.ts validates.
+    adminEmail: cfg.getSecret("adminEmail"),
+    googleClientId: cfg.getSecret("googleClientId"),
+    googleClientSecret: cfg.getSecret("googleClientSecret"),
 };
 
 const fqdn = `${config.subdomain}.${config.domain}`;
@@ -36,6 +40,9 @@ const database = buildDatabase({
 const identity = buildIdentity({
     enabled: config.enableCognito,
     fqdn,
+    adminEmail: config.adminEmail,
+    googleClientId: config.googleClientId,
+    googleClientSecret: config.googleClientSecret,
 });
 
 const compute = buildCompute({
@@ -47,6 +54,7 @@ const compute = buildCompute({
     repository: registry.repository,
     appSecrets: secrets,
     database,
+    identity,
 });
 
 const edge = buildEdge({
@@ -68,4 +76,12 @@ export const albDnsName = edge.albDnsName;
 export const ecrRepositoryUrl = registry.repository.repositoryUrl;
 export const databaseEndpoint = database.endpoint;
 export const cognitoUserPoolId = identity.userPoolId;
+export const cognitoClientId = identity.clientId;
+export const cognitoDomain = identity.domain;
+export const cognitoIssuer = identity.issuer;
+// Convenience: paste this URL into your Google OAuth client's
+// "Authorised redirect URIs" after `pulumi up` provisions Cognito.
+export const cognitoGoogleRedirectUri = identity.domain.apply((d) =>
+    d ? `${d}/oauth2/idpresponse` : undefined,
+);
 export const url = pulumi.interpolate`https://${fqdn}`;

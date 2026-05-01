@@ -13,7 +13,9 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
   "include": ["index.ts", "src/**/*.ts"]
 }

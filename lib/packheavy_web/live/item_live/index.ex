@@ -169,6 +169,12 @@ defmodule PackheavyWeb.ItemLive.Index do
     end
   end
 
+  def handle_event("delete", %{"id" => id}, socket) do
+    item = Inventory.get_item!(id, actor: socket.assigns.current_user)
+    Ash.destroy!(item, actor: socket.assigns.current_user)
+    {:noreply, socket |> put_flash(:info, "Deleted.") |> reload()}
+  end
+
   defp form_error_summary(form) do
     # form is a Phoenix.HTML.Form whose .errors field is already a flat
     # keyword list of {field, {msg, opts}} tuples populated from the
@@ -182,12 +188,6 @@ defmodule PackheavyWeb.ItemLive.Index do
         |> Enum.map(fn {field, {msg, _opts}} -> "#{field} #{msg}" end)
         |> Enum.join(" · ")
     end
-  end
-
-  def handle_event("delete", %{"id" => id}, socket) do
-    item = Inventory.get_item!(id, actor: socket.assigns.current_user)
-    Ash.destroy!(item, actor: socket.assigns.current_user)
-    {:noreply, socket |> put_flash(:info, "Deleted.") |> reload()}
   end
 
   defp category_label(nil), do: ""

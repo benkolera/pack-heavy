@@ -47,7 +47,7 @@ export function buildDatabase(args: Args): DatabaseResult {
         {
             identifier: "packheavy",
             engine: "postgres",
-            engineVersion: "16.4",
+            engineVersion: "16.13",
             instanceClass: "db.t4g.micro",
             allocatedStorage: 20,
             storageType: "gp3",

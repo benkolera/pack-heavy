@@ -74,7 +74,7 @@ export function buildNetwork(args: Args): Result {
 
     const vpceSg = new aws.ec2.SecurityGroup("vpce-sg", {
         vpcId: vpc.vpcId,
-        description: "VPC interface endpoints — 443 from app",
+        description: "VPC interface endpoints - 443 from app",
         egress: [{ protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] }],
     });
 
@@ -87,7 +87,7 @@ export function buildNetwork(args: Args): Result {
         toPort: 443,
     });
 
-    // Endpoints — only declared while running, since they bill hourly.
+    // Endpoints + NAT — only declared while running, since they bill hourly.
     if (args.running) {
         // Gateway endpoint for S3 (free) — Fargate ECR layer pulls go via this.
         new aws.ec2.VpcEndpoint("s3-gw", {
@@ -120,6 +120,28 @@ export function buildNetwork(args: Args): Result {
                 securityGroupIds: [vpceSg.id],
             });
         }
+
+        // Single NAT in the first public subnet → 0.0.0.0/0 from the first
+        // private subnet's route table. Needed for Cognito hosted UI
+        // (`*.auth.<region>.amazoncognito.com`) which has no PrivateLink.
+        // ~$32/mo while running, $0 when parked since the whole block is
+        // running-gated.
+        const eip = new aws.ec2.Eip("nat-eip", { domain: "vpc" });
+        const nat = new aws.ec2.NatGateway("nat", {
+            allocationId: eip.id,
+            subnetId: vpc.publicSubnetIds.apply((ids) => ids[0]),
+        });
+
+        const firstPrivateRtId = vpc.privateSubnetIds.apply(async (ids) => {
+            const rt = await aws.ec2.getRouteTable({ subnetId: ids[0] }, { async: true });
+            return rt.id;
+        });
+
+        new aws.ec2.Route("nat-default", {
+            routeTableId: firstPrivateRtId,
+            destinationCidrBlock: "0.0.0.0/0",
+            natGatewayId: nat.id,
+        });
     }
 
     return {

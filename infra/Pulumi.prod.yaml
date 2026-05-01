@@ -1,14 +1,32 @@
 config:
   aws:region: ap-southeast-2
-  packheavy:domain: example.net
+  packheavy:domain: benkolera.com
   packheavy:subdomain: packheavy
-  packheavy:hostedZoneId: REPLACE_ME
+  packheavy:hostedZoneId: Z3C8FISDEC6QOG
   packheavy:imageTag: latest
   packheavy:running: "true"
-  packheavy:enableCognito: "false"
-  # When enableCognito is flipped to "true", set:
-  # packheavy:googleClientId:
-  #   secure: <pulumi config set --secret packheavy:googleClientId ...>
-  # packheavy:googleClientSecret:
-  #   secure: <pulumi config set --secret packheavy:googleClientSecret ...>
-  # packheavy:adminEmail: ben.kolera@gmail.com
+  packheavy:enableCognito: "true"
+  # When enableCognito is flipped to "true", set the following first
+  # (the identity stack errors loudly if any are missing):
+  #
+  #   pulumi config set --secret packheavy:adminEmail        ben.kolera@gmail.com
+  #   pulumi config set --secret packheavy:googleClientId    <from console.cloud.google.com>
+  #   pulumi config set --secret packheavy:googleClientSecret <from console.cloud.google.com>
+  #
+  # Order of operations:
+  #   1. `pulumi up` once with enableCognito=false to provision ALB/ACM/etc.
+  #   2. Flip enableCognito=true, set the three secrets above.
+  #   3. `pulumi up` — this provisions Cognito + the hosted-UI domain.
+  #   4. `pulumi stack output cognitoDomain` → register that domain's
+  #      `/oauth2/idpresponse` URL as the redirect URI in your Google
+  #      OAuth client.
+  #   5. `pulumi up` again if you needed to update Google client creds.
+
+  packheavy:adminEmail:
+    secure: v1:kiW/mQlhda1XR+XC:isNI2ysMCViml0VYeqsMaz3HLihv4ds7O8Unv4XRGECfqZQq
+  packheavy:googleClientId:
+    secure: v1:MM8U+oOMUBr0VVsc:XDUKS7If6DuKN2DOyk5KEJu7fX/m3IFLVj03xn5ZwI6+y3BL6FLZ97JYYjHIyMc89lDDZDABup902TU7UyqV1h8gGKFth/kkrbIDUX/PyjrhAoZxKP0vyg==
+  packheavy:googleClientSecret:
+    secure: v1:bswnNYSXFjrmLGBj:BkL5VSq+HXo8WbEDM402eunOVwwZ4uD+9qBc4WbqXcTkuHmH7MoiFw+kG4Epw1HLOZ1W
+secretsprovider: awskms://alias/packheavy-pulumi?region=ap-southeast-2
+encryptedkey: AQICAHjGDgitXKPBo0Y/3uXDmWS3c91I03BZHJkHV3NDE/mTSAHtJ49HcwoyO05RTk1/eofyAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMR/HLIT7F22rxA1RSAgEQgDvLZS0gJKYFU4DKFEicBOtaSOenBNDOASWP4ba1VMMdrR7qpMzr1z/+DoDN9iID/hFg1qhXBoVISGrF8g==
