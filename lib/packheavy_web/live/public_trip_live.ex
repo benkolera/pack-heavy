@@ -192,33 +192,33 @@ defmodule PackheavyWeb.PublicTripLive do
               <div class="flex justify-between items-baseline border-b border-success pb-0.5 mb-1">
                 <h3 class="text-success text-xs font-bold uppercase tracking-wide">{label}</h3>
                 <span class="text-success text-xs tabular-nums opacity-80">
-                  <span :if={cap = @section_capacity.(cat)} class="mr-2">Σ {TripShow.format_capacity(cap)} L</span><span :if={kcal = @section_calories.(cat)} class="mr-2">Σ {kcal} kcal</span>{@section_weight.(cat)} g
+                  <span :if={cap = @section_capacity.(cat)} class="mr-2">Σ {TripShow.format_capacity(cap)}L</span><span :if={kcal = @section_calories.(cat)} class="mr-2">Σ {kcal}kcal</span>{@section_weight.(cat)}g
                 </span>
               </div>
               <ul class="divide-y divide-base-300">
                 <li
                   :for={ti <- Map.get(@grouped, cat, [])}
-                  class="flex items-center py-2 px-1 gap-2"
+                  class="flex items-center py-2 px-0.5 sm:px-1 gap-1 sm:gap-2"
                 >
                   <span class="flex-1 min-w-0 truncate text-sm">
                     <span :if={ti.item.brand} class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom">{ti.item.brand}</span>
                     {ti.item.title}
                   </span>
                   <span :if={cap = TripShow.pack_capacity(ti)} class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">
-                    {TripShow.format_capacity(cap)} L
+                    {TripShow.format_capacity(cap)}L
                   </span>
                   <span :if={kcal = TripShow.food_calories(ti)} class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">
-                    {kcal} kcal
+                    {kcal}kcal
                   </span>
                   <span class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">
                     <%= if ti.qty > 1 do %>
-                      {ti.item.weight_g || 0} g × {ti.qty}
+                      {ti.item.weight_g || 0}g×{ti.qty}
                     <% else %>
                       ×1
                     <% end %>
                   </span>
-                  <span class="opacity-60 text-xs tabular-nums w-16 text-right">
-                    {(ti.item.weight_g || 0) * ti.qty} g
+                  <span class="opacity-60 text-xs tabular-nums w-14 sm:w-16 text-right">
+                    {(ti.item.weight_g || 0) * ti.qty}g
                   </span>
                 </li>
               </ul>

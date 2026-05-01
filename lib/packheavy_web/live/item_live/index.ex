@@ -270,7 +270,7 @@ defmodule PackheavyWeb.ItemLive.Index do
               <p class="text-sm opacity-50 italic px-2 py-2">No {String.downcase(label)} items yet.</p>
             <% items -> %>
               <ul class="divide-y divide-base-300">
-                <li :for={item <- items} class="flex items-center py-3 group hover:bg-base-200 px-2 rounded gap-2">
+                <li :for={item <- items} class="flex items-center py-3 group hover:bg-base-200 px-1 sm:px-2 rounded gap-1 sm:gap-2">
                   <.link patch={~p"/items/#{item.id}/edit"} class="flex-1 min-w-0 text-left leading-tight">
                     <div class="truncate">
                       <span :if={item.brand} class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom">{item.brand}</span>{item.title}
@@ -298,7 +298,7 @@ defmodule PackheavyWeb.ItemLive.Index do
     """
   end
 
-  defp format_weight(grams) when is_integer(grams), do: "#{grams} g"
+  defp format_weight(grams) when is_integer(grams), do: "#{grams}g"
   defp format_weight(_), do: "—"
 
   defp category_extra(%{category_data: %Ash.Union{value: cd}} = item, battery_types),
