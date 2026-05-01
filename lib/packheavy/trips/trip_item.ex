@@ -2,7 +2,8 @@ defmodule Packheavy.Trips.TripItem do
   use Ash.Resource,
     otp_app: :packheavy,
     domain: Packheavy.Trips,
-    data_layer: AshPostgres.DataLayer
+    data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
 
   postgres do
     table "trip_items"
@@ -11,6 +12,16 @@ defmodule Packheavy.Trips.TripItem do
     references do
       reference :trip, on_delete: :delete
       reference :item, on_delete: :delete
+    end
+  end
+
+  policies do
+    policy action_type(:create) do
+      authorize_if actor_present()
+    end
+
+    policy action_type([:read, :update, :destroy]) do
+      authorize_if expr(trip.user_id == ^actor(:id))
     end
   end
 

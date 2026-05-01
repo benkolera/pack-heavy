@@ -2,7 +2,8 @@ defmodule Packheavy.Inventory.KitItem do
   use Ash.Resource,
     otp_app: :packheavy,
     domain: Packheavy.Inventory,
-    data_layer: AshPostgres.DataLayer
+    data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
 
   postgres do
     table "kit_items"
@@ -11,6 +12,20 @@ defmodule Packheavy.Inventory.KitItem do
     references do
       reference :kit, on_delete: :delete
       reference :item, on_delete: :delete
+    end
+  end
+
+  # No direct user_id — scope through the parent kit's owner. Forging
+  # a kit_id from another user is bounded by the fact that Kit's own
+  # policies prevent enumerating other users' kits, so the kit_id has
+  # to be a UUID you can't otherwise read.
+  policies do
+    policy action_type(:create) do
+      authorize_if actor_present()
+    end
+
+    policy action_type([:read, :update, :destroy]) do
+      authorize_if expr(kit.user_id == ^actor(:id))
     end
   end
 

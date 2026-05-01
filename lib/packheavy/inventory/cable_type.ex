@@ -2,11 +2,22 @@ defmodule Packheavy.Inventory.CableType do
   use Ash.Resource,
     otp_app: :packheavy,
     domain: Packheavy.Inventory,
-    data_layer: AshPostgres.DataLayer
+    data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
 
   postgres do
     table "cable_types"
     repo Packheavy.Repo
+  end
+
+  policies do
+    policy action_type(:create) do
+      authorize_if actor_present()
+    end
+
+    policy action_type([:read, :update, :destroy]) do
+      authorize_if expr(user_id == ^actor(:id))
+    end
   end
 
   actions do

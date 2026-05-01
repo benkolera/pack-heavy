@@ -127,19 +127,26 @@ defmodule Packheavy.Trips.Trip do
       argument :kit_id, :uuid, allow_nil?: false
       require_atomic? false
 
-      change fn changeset, _ctx ->
+      change fn changeset, ctx ->
         Ash.Changeset.after_action(changeset, fn _cs, trip ->
+          actor = ctx.actor
           kit_id = Ash.Changeset.get_argument(changeset, :kit_id)
 
+          # Resolve the kit through the actor so an attacker can't pass
+          # another user's kit_id and expand it into their own trip.
           kit =
             Packheavy.Inventory.Kit
-            |> Ash.get!(kit_id, load: [kit_items: []])
+            |> Ash.get!(kit_id, load: [kit_items: []], actor: actor)
 
+          # The outer Trip action has already authorized that this trip
+          # belongs to the actor; the inner join-table writes are
+          # implementation details, so bypass authorize here.
           Ash.create!(
             Packheavy.Trips.TripKit,
             %{trip_id: trip.id, kit_id: kit_id},
             upsert?: true,
-            upsert_identity: :unique_trip_kit
+            upsert_identity: :unique_trip_kit,
+            authorize?: false
           )
 
           require Ash.Query
