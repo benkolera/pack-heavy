@@ -687,14 +687,14 @@ defmodule PackheavyWeb.TripLive.Show do
               <span :if={ti.source == :kit} class="badge badge-xs shrink-0">kit</span>
               <%= if PackheavyWeb.TripLive.Show.needs_charging?(ti, @rechargeable_battery_ids) do %>
                 <label class="flex items-center justify-end cursor-pointer w-12 sm:w-24 shrink-0" aria-label="charged">
-                  <input type="checkbox" class="checkbox checkbox-sm print:hidden" checked={ti.charged} phx-click="toggle_charged" phx-value-id={ti.id} />
+                  <input type="checkbox" class="checkbox md:checkbox-lg print:hidden" checked={ti.charged} phx-click="toggle_charged" phx-value-id={ti.id} />
                   <span class="hidden print:inline text-base leading-none">{if ti.charged, do: "☑", else: "☐"}</span>
                 </label>
               <% else %>
                 <span class="w-12 sm:w-24 shrink-0 text-right opacity-20">—</span>
               <% end %>
               <label class="flex items-center justify-end cursor-pointer w-12 sm:w-24 shrink-0" aria-label="packed">
-                <input type="checkbox" class="checkbox checkbox-sm print:hidden" checked={ti.packed} phx-click="toggle_packed" phx-value-id={ti.id} />
+                <input type="checkbox" class="checkbox md:checkbox-lg print:hidden" checked={ti.packed} phx-click="toggle_packed" phx-value-id={ti.id} />
                 <span class="hidden print:inline text-base leading-none">{if ti.packed, do: "☑", else: "☐"}</span>
               </label>
             </li>
