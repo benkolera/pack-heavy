@@ -187,7 +187,7 @@ defmodule PackheavyWeb.ItemPicker do
                     />
                     <div class="flex-1 min-w-0 text-sm leading-tight">
                       <div class="truncate">
-                        <span :if={item.brand} class="opacity-60 mr-1">{item.brand}</span>{item.title}
+                        <span :if={item.brand} class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom">{item.brand}</span>{item.title}
                         <span :if={Map.has_key?(@existing_qty, item.id)} class="badge badge-xs ml-1 align-middle">on trip</span>
                       </div>
                       <div class="text-xs opacity-50 tabular-nums">

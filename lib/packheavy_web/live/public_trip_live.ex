@@ -201,7 +201,7 @@ defmodule PackheavyWeb.PublicTripLive do
                   class="flex items-center py-2 px-1 gap-2"
                 >
                   <span class="flex-1 min-w-0 truncate text-sm">
-                    <span :if={ti.item.brand} class="opacity-60 mr-1">{ti.item.brand}</span>
+                    <span :if={ti.item.brand} class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom">{ti.item.brand}</span>
                     {ti.item.title}
                   </span>
                   <span :if={cap = TripShow.pack_capacity(ti)} class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">

@@ -273,7 +273,7 @@ defmodule PackheavyWeb.ItemLive.Index do
                 <li :for={item <- items} class="flex items-center py-3 group hover:bg-base-200 px-2 rounded gap-2">
                   <.link patch={~p"/items/#{item.id}/edit"} class="flex-1 min-w-0 text-left leading-tight">
                     <div class="truncate">
-                      <span :if={item.brand} class="opacity-60 mr-1">{item.brand}</span>{item.title}
+                      <span :if={item.brand} class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom">{item.brand}</span>{item.title}
                       <span :if={item.qty != 1} class="opacity-60 ml-1">× {item.qty}</span>
                     </div>
                     <% extra = category_extra(item, @battery_types) %>

@@ -112,7 +112,7 @@ defmodule PackheavyWeb.KitLive.Show do
           <tbody>
             <tr :for={ki <- @kit.kit_items}>
               <td>
-                <span :if={ki.item.brand} class="opacity-60 mr-1">{ki.item.brand}</span>{ki.item.title}
+                <span :if={ki.item.brand} class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom">{ki.item.brand}</span>{ki.item.title}
               </td>
               <td class="text-right">{ki.qty}</td>
               <td class="text-right">

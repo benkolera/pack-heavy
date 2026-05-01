@@ -492,7 +492,7 @@ defmodule PackheavyWeb.TripLive.Show do
           <ul class="divide-y divide-base-300">
             <li :for={ti <- Map.get(@grouped, cat, [])} class="flex items-center py-2 px-1 gap-2">
               <span class="flex-1 min-w-0 truncate text-sm">
-                <span :if={ti.item.brand} class="opacity-60 mr-1">{ti.item.brand}</span>{ti.item.title}
+                <span :if={ti.item.brand} class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom">{ti.item.brand}</span>{ti.item.title}
                 <span :if={ti.source == :kit} class="badge badge-xs ml-1">kit</span>
               </span>
               <span :if={cap = pack_capacity(ti)} class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">{format_capacity(cap)} L</span>
@@ -675,7 +675,7 @@ defmodule PackheavyWeb.TripLive.Show do
           <ul class="divide-y divide-base-300">
             <li :for={ti <- Map.get(@grouped, cat, [])} class="flex items-center py-2 px-1 gap-2">
               <span class="flex-1 min-w-0 truncate text-sm">
-                <span :if={ti.item.brand} class="opacity-60 mr-1">{ti.item.brand}</span>{ti.item.title}
+                <span :if={ti.item.brand} class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom">{ti.item.brand}</span>{ti.item.title}
               </span>
               <span class="text-xs opacity-60 shrink-0 tabular-nums whitespace-nowrap">
                 <%= if ti.qty > 1 do %>
