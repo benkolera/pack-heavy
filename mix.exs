@@ -104,6 +104,10 @@ defmodule Packheavy.MixProject do
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["compile", "tailwind packheavy", "esbuild packheavy"],
       "assets.deploy": [
+        # `compile` runs first so LiveView 1.1+ colocated hooks
+        # (`phoenix-colocated/<app>`) are generated before esbuild
+        # tries to import them. Mirrors `assets.build`.
+        "compile",
         "tailwind packheavy --minify",
         "esbuild packheavy --minify",
         "phx.digest"

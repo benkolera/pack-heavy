@@ -3,7 +3,7 @@ config:
   packheavy:domain: benkolera.com
   packheavy:subdomain: packheavy
   packheavy:hostedZoneId: Z3C8FISDEC6QOG
-  packheavy:imageTag: latest
+  packheavy:imageTag: e2dc685
   packheavy:running: "true"
   packheavy:enableCognito: "true"
   # When enableCognito is flipped to "true", set the following first

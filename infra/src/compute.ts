@@ -240,6 +240,12 @@ export function buildCompute(args: Args): ComputeResult {
                 ],
                 deploymentMinimumHealthyPercent: 0,
                 deploymentMaximumPercent: 200,
+                // Block `pulumi up` until ECS reports steady state
+                // (running tasks == desired, no in-flight deploy).
+                // Catches broken images at apply time instead of
+                // letting the ALB silently 503 after Pulumi declares
+                // success.
+                waitForSteadyState: true,
             });
             (result as { serviceName: pulumi.Output<string | undefined> }).serviceName =
                 service.name;

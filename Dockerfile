@@ -10,10 +10,17 @@
 # / OTP 28).
 ARG ELIXIR_VERSION=1.19.5
 ARG OTP_VERSION=28.0.2
-ARG DEBIAN_VERSION=bookworm-20250908-slim
 
-ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
-ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
+# hexpm/elixir only publishes snapshot tags, so the builder must point
+# at one that actually exists on Docker Hub. Bump when stale; check
+# https://hub.docker.com/r/hexpm/elixir/tags for the current list.
+ARG BUILDER_DEBIAN=bookworm-20260421-slim
+# Runner can roll — security patches land automatically and we rebuild
+# every deploy.
+ARG RUNNER_DEBIAN=bookworm-slim
+
+ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${BUILDER_DEBIAN}"
+ARG RUNNER_IMAGE="debian:${RUNNER_DEBIAN}"
 
 # ---------- builder ----------
 FROM ${BUILDER_IMAGE} AS builder
@@ -22,6 +29,12 @@ FROM ${BUILDER_IMAGE} AS builder
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
       build-essential git curl ca-certificates \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# RDS Postgres terminates connections with TLS using AWS's PKI. Pull
+# the global cert bundle here in the builder so the runtime stage
+# doesn't need curl.
+RUN curl -fsSL -o /tmp/rds-global-bundle.pem \
+      https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 
 # Prepare build dir
 WORKDIR /app
@@ -60,6 +73,10 @@ FROM ${RUNNER_IMAGE} AS runtime
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
       libstdc++6 openssl libncurses6 locales ca-certificates \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# RDS Postgres CA bundle from the builder. runtime.exs points
+# Postgrex's :cacertfile here.
+COPY --from=builder /tmp/rds-global-bundle.pem /etc/ssl/certs/rds-global-bundle.pem
 
 # Set the locale
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen

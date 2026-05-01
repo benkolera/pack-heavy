@@ -54,13 +54,30 @@ if config_env() == :prod do
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
+  # RDS Postgres rejects unencrypted connections. Verify the RDS
+  # endpoint against AWS's global CA bundle (baked into the image at
+  # /etc/ssl/certs/rds-global-bundle.pem by the runtime Dockerfile
+  # stage) and pin the hostname via SNI so we catch any MITM.
+  db_host =
+    case URI.parse(database_url) do
+      %URI{host: host} when is_binary(host) and host != "" -> host
+      _ -> raise "Could not parse host from DATABASE_URL"
+    end
+
   config :packheavy, Packheavy.Repo,
-    # ssl: true,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     # For machines with several cores, consider starting multiple pools of `pool_size`
     # pool_count: 4,
-    socket_options: maybe_ipv6
+    socket_options: maybe_ipv6,
+    ssl: [
+      cacertfile: "/etc/ssl/certs/rds-global-bundle.pem",
+      verify: :verify_peer,
+      server_name_indication: String.to_charlist(db_host),
+      customize_hostname_check: [
+        match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+      ]
+    ]
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
