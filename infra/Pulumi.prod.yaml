@@ -3,13 +3,13 @@ config:
   packheavy:domain: benkolera.com
   packheavy:subdomain: packheavy
   packheavy:hostedZoneId: Z3C8FISDEC6QOG
-  packheavy:imageTag: b1dd2bd
+  packheavy:imageTag: aa369b8
   packheavy:running: "true"
   packheavy:enableAuth0: "true"
   # When enableAuth0 is flipped to "true", set the following first
   # (the identity stack errors loudly if any are missing):
   #
-  #   pulumi config set --secret packheavy:adminEmail            ben.kolera@gmail.com
+  #   pulumi config set --secret packheavy:allowedEmails         "you@example.com,other@example.com"
   #   pulumi config set --secret packheavy:googleClientId        <from console.cloud.google.com>
   #   pulumi config set --secret packheavy:googleClientSecret    <from console.cloud.google.com>
   #   pulumi config set --secret packheavy:auth0Domain           <tenant>.<region>.auth0.com
@@ -29,8 +29,6 @@ config:
   #   5. `pulumi stack output auth0GoogleRedirectUri` → register that URL
   #      as the redirect URI in your Google OAuth client.
 
-  packheavy:adminEmail:
-    secure: v1:kiW/mQlhda1XR+XC:isNI2ysMCViml0VYeqsMaz3HLihv4ds7O8Unv4XRGECfqZQq
   packheavy:googleClientId:
     secure: v1:MM8U+oOMUBr0VVsc:XDUKS7If6DuKN2DOyk5KEJu7fX/m3IFLVj03xn5ZwI6+y3BL6FLZ97JYYjHIyMc89lDDZDABup902TU7UyqV1h8gGKFth/kkrbIDUX/PyjrhAoZxKP0vyg==
   packheavy:googleClientSecret:
@@ -41,5 +39,7 @@ config:
     secure: v1:PEb1syOo44NxyK5/:y6ezDPitXVeAlxmQoWuEClDZfTTHTivI3KTMTniA1pdRrQklX1vcxXIjJO1o4F3D
   packheavy:auth0MgmtClientSecret:
     secure: v1:3XA1Oyv/D1Xhz96L:r59W1D8vlR9g4HKymDrBoqUNJO/UN5pMwLHafBGF8qpqbLQuKSDFMty87Flacrz1Ibq9BH7sTQxvCNLXwrUpdg70DjLCENUvobE+qRYOep8=
+  packheavy:allowedEmails:
+    secure: v1:ufJ3KoNINHtrxzV4:fhiiRVaautheXt2xcMpH2ID5Zm870DTZ8EvYdWVq2Yp7NRj0/zdP44PTmZiRHb8sAhjIQXuLjiZ+TAM=
 secretsprovider: awskms://alias/packheavy-pulumi?region=ap-southeast-2
 encryptedkey: AQICAHjGDgitXKPBo0Y/3uXDmWS3c91I03BZHJkHV3NDE/mTSAHtJ49HcwoyO05RTk1/eofyAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMR/HLIT7F22rxA1RSAgEQgDvLZS0gJKYFU4DKFEicBOtaSOenBNDOASWP4ba1VMMdrR7qpMzr1z/+DoDN9iID/hFg1qhXBoVISGrF8g==

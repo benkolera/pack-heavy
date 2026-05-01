@@ -36,8 +36,8 @@ defmodule Packheavy.Accounts.User do
 
       # Auth0-fronted Google SSO. Registration is enabled so the very
       # first sign-in creates the user; the tenant's post-login
-      # allowlist Action (set to packheavy:adminEmail in the Pulumi
-      # stack) ensures only that one email can ever land here.
+      # allowlist Action (configured from packheavy:allowedEmails in
+      # the Pulumi stack) gates which addresses can ever land here.
       oauth2 :auth0 do
         client_id Packheavy.Secrets
         client_secret Packheavy.Secrets
@@ -50,9 +50,9 @@ defmodule Packheavy.Accounts.User do
         register_action_name :register_with_auth0
         # Disabled because:
         #   1. The password strategy only exists in dev/test builds.
-        #   2. The Auth0 post-login allowlist Action (adminEmail) is
-        #      the actual takeover prevention — only one Google
-        #      account can ever produce a successful login.
+        #   2. The Auth0 post-login allowlist Action (allowedEmails)
+        #      is the actual takeover prevention — only the addresses
+        #      on that list can ever produce a successful login.
         # The default-on guard would require a confirmation add-on on
         # the password strategy, which is overkill for a single-user,
         # dev-only password path.

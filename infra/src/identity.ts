@@ -5,7 +5,10 @@ import * as auth0 from "@pulumi/auth0";
 interface Args {
     enabled: boolean;
     fqdn: string;
-    adminEmail?: pulumi.Output<string>;
+    // Comma-separated allowlist of email addresses permitted to log in.
+    // Whitespace around each entry is trimmed; case is ignored at match
+    // time.
+    allowedEmails?: pulumi.Output<string>;
     googleClientId?: pulumi.Output<string>;
     googleClientSecret?: pulumi.Output<string>;
     auth0Domain?: pulumi.Output<string>;
@@ -33,7 +36,7 @@ const disabled: IdentityResult = {
 
 // Auth0 tenant configured for Universal Login with Google as the only
 // connection. A post-login Action denies any login whose email isn't
-// `adminEmail`.
+// in the `allowedEmails` allowlist.
 //
 // You provision the tenant + a Management API M2M client manually
 // (Auth0 doesn't expose tenant creation via API). Required scopes on
@@ -45,7 +48,7 @@ export function buildIdentity(args: Args): IdentityResult {
     }
 
     if (
-        !args.adminEmail ||
+        !args.allowedEmails ||
         !args.googleClientId ||
         !args.googleClientSecret ||
         !args.auth0Domain ||
@@ -53,7 +56,7 @@ export function buildIdentity(args: Args): IdentityResult {
         !args.auth0MgmtClientSecret
     ) {
         throw new Error(
-            "identity.ts: enableAuth0=true requires packheavy:adminEmail, " +
+            "identity.ts: enableAuth0=true requires packheavy:allowedEmails, " +
             "packheavy:googleClientId, packheavy:googleClientSecret, " +
             "packheavy:auth0Domain, packheavy:auth0MgmtClientId, " +
             "packheavy:auth0MgmtClientSecret.",
@@ -122,16 +125,20 @@ export function buildIdentity(args: Args): IdentityResult {
 
     // -- Post-login allowlist Action -----------------------------------------
 
-    const allowlistCode = args.adminEmail.apply(
-        (email) => `exports.onExecutePostLogin = async (event, api) => {
-  const allow = ${JSON.stringify(email)};
+    const allowlistCode = args.allowedEmails.apply((csv) => {
+        const list = csv
+            .split(",")
+            .map((e) => e.trim().toLowerCase())
+            .filter((e) => e.length > 0);
+        return `exports.onExecutePostLogin = async (event, api) => {
+  const allow = ${JSON.stringify(list)};
   const userEmail = (event.user && event.user.email || "").toLowerCase();
-  if (userEmail !== allow.toLowerCase()) {
+  if (!allow.includes(userEmail)) {
     api.access.deny("Email not on allowlist: " + userEmail);
   }
 };
-`,
-    );
+`;
+    });
 
     const allowlistAction = new auth0.Action(
         "email-allowlist",

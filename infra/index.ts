@@ -18,7 +18,9 @@ const config = {
     running: cfg.requireBoolean("running"),
     enableAuth0: cfg.requireBoolean("enableAuth0"),
     // Required only when enableAuth0 is true; identity.ts validates.
-    adminEmail: cfg.getSecret("adminEmail"),
+    // `allowedEmails` is a comma-separated list of addresses permitted
+    // to log in.
+    allowedEmails: cfg.getSecret("allowedEmails"),
     googleClientId: cfg.getSecret("googleClientId"),
     googleClientSecret: cfg.getSecret("googleClientSecret"),
     auth0Domain: cfg.getSecret("auth0Domain"),
@@ -43,7 +45,7 @@ const database = buildDatabase({
 const identity = buildIdentity({
     enabled: config.enableAuth0,
     fqdn,
-    adminEmail: config.adminEmail,
+    allowedEmails: config.allowedEmails,
     googleClientId: config.googleClientId,
     googleClientSecret: config.googleClientSecret,
     auth0Domain: config.auth0Domain,

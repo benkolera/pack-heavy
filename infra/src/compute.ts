@@ -198,16 +198,12 @@ export function buildCompute(args: Args): ComputeResult {
                                 "awslogs-stream-prefix": "app",
                             },
                         },
-                        healthCheck: {
-                            command: [
-                                "CMD-SHELL",
-                                "wget -qO- http://localhost:4000/health | grep -q ok || exit 1",
-                            ],
-                            interval: 15,
-                            timeout: 5,
-                            retries: 3,
-                            startPeriod: 30,
-                        },
+                        // No container-level healthCheck — the ALB
+                        // target-group health check on /health is the
+                        // authoritative liveness signal. The runtime
+                        // image is `apt-get install`'d without wget or
+                        // curl, so a CMD-SHELL probe would have nothing
+                        // to call anyway.
                     },
                 ]);
             }),

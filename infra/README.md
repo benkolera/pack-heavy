@@ -113,9 +113,10 @@ aws ecs describe-services --cluster packheavy --services packheavy --region ap-s
 
 In prod, the password strategy is gated to `Mix.env() in [:dev, :test]`,
 so the release literally has no `register_with_password` action. Your
-prod user is created on **first Auth0 sign-in** — the post-login
-allowlist Action (`packheavy:adminEmail`) ensures only that one address
-can ever complete login, so first-sign-in upsert is the seed.
+prod user(s) are created on **first Auth0 sign-in** — the post-login
+allowlist Action (`packheavy:allowedEmails`, comma-separated) gates
+which addresses can ever complete login, so first-sign-in upsert is
+the seed.
 
 The `priv/scripts/create_user.exs` script remains for local dev only.
 
@@ -151,7 +152,8 @@ ECS recreate. Takes ~10 min, dominated by RDS restore.
 
 The pieces are all wired — flipping `packheavy:enableAuth0: "true"`
 provisions an Auth0 application, a Google connection, and a post-login
-Action that allowlists exactly `packheavy:adminEmail`. A NAT gateway
+Action that allowlists the addresses in `packheavy:allowedEmails`
+(comma-separated). A NAT gateway
 (running-gated, ~$32/mo) is added so the ECS task can reach Auth0's
 tenant endpoints, which have no PrivateLink.
 
@@ -179,7 +181,7 @@ Order of operations (chicken-and-egg with Google OAuth's redirect URI):
      step 6).
 4. **Set the six secrets**:
    ```sh
-   pulumi config set --secret packheavy:adminEmail            ben.kolera@gmail.com
+   pulumi config set --secret packheavy:allowedEmails         "ben.kolera@gmail.com,bobbydoulton@gmail.com"
    pulumi config set --secret packheavy:googleClientId        <from google console>
    pulumi config set --secret packheavy:googleClientSecret    <from google console>
    pulumi config set --secret packheavy:auth0Domain           <tenant>.<region>.auth0.com
@@ -201,8 +203,9 @@ Order of operations (chicken-and-egg with Google OAuth's redirect URI):
 8. Open `https://packheavy.benkolera.com`, click "Sign in with Auth0",
    complete Google OAuth — first sign-in upserts the user.
 
-If anyone other than `adminEmail` tries to sign in, the post-login
-Action calls `api.access.deny(...)` and Auth0 refuses the login.
+If anyone whose email isn't in `allowedEmails` tries to sign in, the
+post-login Action calls `api.access.deny(...)` and Auth0 refuses the
+login.
 
 ## Useful commands
 
