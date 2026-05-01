@@ -56,6 +56,9 @@ defmodule PackheavyWeb.Layouts do
           <li><.link navigate={~p"/backup"} class="btn btn-ghost btn-sm">Backup</.link></li>
           <li><.theme_toggle /></li>
           <%= if @current_user do %>
+            <li class="text-xs opacity-60 px-2 truncate max-w-[14rem]" title={to_string(@current_user.email)}>
+              {to_string(@current_user.email)}
+            </li>
             <li>
               <.link href={~p"/sign-out"} method="delete" class="btn btn-ghost btn-sm">Sign out</.link>
             </li>
@@ -82,7 +85,10 @@ defmodule PackheavyWeb.Layouts do
               </div>
             </li>
             <%= if @current_user do %>
-              <li class="border-t border-base-300 mt-1 pt-1">
+              <li class="border-t border-base-300 mt-1 pt-1 text-xs opacity-60 px-2 truncate" title={to_string(@current_user.email)}>
+                {to_string(@current_user.email)}
+              </li>
+              <li>
                 <.link href={~p"/sign-out"} method="delete">Sign out</.link>
               </li>
             <% end %>
