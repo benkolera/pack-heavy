@@ -274,22 +274,61 @@ defmodule PackheavyWeb.TripLive.Show do
         </button>
       <% end %>
       <script :type={Phoenix.LiveView.ColocatedHook} name=".CopyShareLink">
+        // Three-tier fallback: navigator.clipboard (modern, fails on
+        // some iOS Safari setups), document.execCommand('copy') via a
+        // hidden textarea (iOS-tested), then a final prompt() the user
+        // can long-press in to copy manually.
         export default {
           mounted() {
             this.el.addEventListener("click", () => {
               const url = this.el.dataset.url
-              const ok = () => {
-                const original = this.el.textContent
+              const original = this.el.textContent
+              const flash = () => {
                 this.el.textContent = "Copied!"
                 setTimeout(() => { this.el.textContent = original }, 1500)
               }
-              if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(url).then(ok).catch(() => {
-                  prompt("Copy this link:", url)
-                })
-              } else {
-                prompt("Copy this link:", url)
+
+              const legacyCopy = () => {
+                const ta = document.createElement("textarea")
+                ta.value = url
+                ta.setAttribute("readonly", "")
+                ta.style.position = "fixed"
+                ta.style.top = "0"
+                ta.style.left = "0"
+                ta.style.width = "1px"
+                ta.style.height = "1px"
+                ta.style.opacity = "0"
+                ta.style.pointerEvents = "none"
+                document.body.appendChild(ta)
+                // iOS won't select an input unless it's contentEditable
+                // and not readonly during the selection itself.
+                ta.contentEditable = "true"
+                ta.readOnly = false
+                const range = document.createRange()
+                range.selectNodeContents(ta)
+                const sel = window.getSelection()
+                sel.removeAllRanges()
+                sel.addRange(range)
+                ta.setSelectionRange(0, 999999)
+                let ok = false
+                try { ok = document.execCommand("copy") } catch (_) {}
+                document.body.removeChild(ta)
+                return ok
               }
+
+              const tryClipboardApi = () => {
+                if (!navigator.clipboard || !navigator.clipboard.writeText) {
+                  return Promise.reject(new Error("no clipboard api"))
+                }
+                return navigator.clipboard.writeText(url)
+              }
+
+              tryClipboardApi()
+                .then(flash)
+                .catch(() => {
+                  if (legacyCopy()) flash()
+                  else prompt("Copy this link:", url)
+                })
             })
           }
         }
