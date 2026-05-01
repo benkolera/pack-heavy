@@ -53,6 +53,7 @@ defmodule PackheavyWeb.Layouts do
           <li><.link navigate={~p"/trips"} class="btn btn-ghost btn-sm">Trips</.link></li>
           <li><.link navigate={~p"/cable-types"} class="btn btn-ghost btn-sm">Cables</.link></li>
           <li><.link navigate={~p"/battery-types"} class="btn btn-ghost btn-sm">Batteries</.link></li>
+          <li><.link navigate={~p"/backup"} class="btn btn-ghost btn-sm">Backup</.link></li>
           <li><.theme_toggle /></li>
           <%= if @current_user do %>
             <li>
@@ -74,6 +75,7 @@ defmodule PackheavyWeb.Layouts do
             <li><.link navigate={~p"/kits"}>Kits</.link></li>
             <li><.link navigate={~p"/cable-types"}>Cables</.link></li>
             <li><.link navigate={~p"/battery-types"}>Batteries</.link></li>
+            <li><.link navigate={~p"/backup"}>Backup</.link></li>
             <li class="border-t border-base-300 mt-1 pt-2">
               <div class="flex justify-center hover:bg-transparent focus:bg-transparent p-1">
                 <.theme_toggle />

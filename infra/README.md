@@ -18,7 +18,7 @@ infra/
     ├── secrets.ts            ← random app secrets (SECRET_KEY_BASE etc)
     ├── database.ts           ← RDS db.t4g.micro Postgres
     ├── registry.ts           ← ECR repository
-    ├── identity.ts           ← Cognito user pool + Google IDP + pre-sign-up Lambda allowlist (gated on packheavy:enableCognito)
+    ├── identity.ts           ← Auth0 application + Google connection + post-login allowlist Action (gated on packheavy:enableAuth0)
     ├── compute.ts            ← ECS cluster, task def, service, IAM
     └── edge.ts               ← ACM cert, ALB, listeners, A-record
 ```
@@ -45,7 +45,7 @@ your AWS account ID) and KMS alias filled in.
 2. **Edit `Pulumi.prod.yaml`**:
    - `packheavy:domain` — your existing Route53-managed domain
    - `packheavy:hostedZoneId` — that domain's zone ID
-   - keep `packheavy:running: "true"` and `packheavy:enableCognito: "false"`
+   - keep `packheavy:running: "true"` and `packheavy:enableAuth0: "false"`
 3. **Install deps**:
    ```sh
    cd infra
@@ -113,9 +113,9 @@ aws ecs describe-services --cluster packheavy --services packheavy --region ap-s
 
 In prod, the password strategy is gated to `Mix.env() in [:dev, :test]`,
 so the release literally has no `register_with_password` action. Your
-prod user is created on **first Cognito sign-in** — the pre-sign-up
-Lambda allowlist (`packheavy:adminEmail`) ensures only that one address
-can ever land in the user pool, so first-sign-in upsert is the seed.
+prod user is created on **first Auth0 sign-in** — the post-login
+allowlist Action (`packheavy:adminEmail`) ensures only that one address
+can ever complete login, so first-sign-in upsert is the seed.
 
 The `priv/scripts/create_user.exs` script remains for local dev only.
 
@@ -147,45 +147,62 @@ pulumi up
 RDS restores from the `packheavy-final` snapshot, ALB / TG / endpoints /
 ECS recreate. Takes ~10 min, dominated by RDS restore.
 
-## Cognito SSO (Google federation)
+## Auth0 SSO (Google federation)
 
-The pieces are all wired — flipping `packheavy:enableCognito: "true"`
-provisions the user pool, hosted-UI domain, Google IDP, app client, and
-a pre-sign-up Lambda that allowlists exactly `packheavy:adminEmail`.
-A NAT gateway (running-gated, ~$32/mo) is added so the ECS task can
-reach the Cognito hosted-UI token endpoint, which has no PrivateLink.
+The pieces are all wired — flipping `packheavy:enableAuth0: "true"`
+provisions an Auth0 application, a Google connection, and a post-login
+Action that allowlists exactly `packheavy:adminEmail`. A NAT gateway
+(running-gated, ~$32/mo) is added so the ECS task can reach Auth0's
+tenant endpoints, which have no PrivateLink.
 
 Order of operations (chicken-and-egg with Google OAuth's redirect URI):
 
-1. **First `pulumi up` with `enableCognito: false`** to provision
+1. **First `pulumi up` with `enableAuth0: false`** to provision
    ALB / ACM cert / Route53 / etc.
-2. Create a Google OAuth client at
+2. **Create the Auth0 tenant manually** at
+   [auth0.com](https://auth0.com) — Auth0 doesn't expose tenant
+   creation via API. Then in the Auth0 dashboard:
+   - Applications → APIs → Auth0 Management API → Machine to Machine
+     Applications → create one named e.g. `packheavy-pulumi`.
+   - Authorise it for the Management API with these scopes:
+     `read/create/update/delete:clients`,
+     `read/create/update/delete:connections`,
+     `read/create/update/delete:actions`,
+     `read:client_keys`, `read:client_credentials`,
+     `update:trigger_bindings`.
+   - Note the tenant **Domain** (e.g. `packheavy.au.auth0.com`) and
+     the M2M client's **Client ID** + **Client Secret**.
+3. Create a Google OAuth client at
    [console.cloud.google.com → Credentials](https://console.cloud.google.com/apis/credentials).
    - Authorised JavaScript origin: `https://packheavy.benkolera.com`
    - Authorised redirect URI: leave empty for now (you'll fill it in
-     step 5).
-3. **Set the three secrets**:
+     step 6).
+4. **Set the six secrets**:
    ```sh
-   pulumi config set --secret packheavy:adminEmail        ben.kolera@gmail.com
-   pulumi config set --secret packheavy:googleClientId    <from console>
-   pulumi config set --secret packheavy:googleClientSecret <from console>
-   pulumi config set        packheavy:enableCognito       true
+   pulumi config set --secret packheavy:adminEmail            ben.kolera@gmail.com
+   pulumi config set --secret packheavy:googleClientId        <from google console>
+   pulumi config set --secret packheavy:googleClientSecret    <from google console>
+   pulumi config set --secret packheavy:auth0Domain           <tenant>.<region>.auth0.com
+   pulumi config set --secret packheavy:auth0MgmtClientId     <Auth0 M2M client>
+   pulumi config set --secret packheavy:auth0MgmtClientSecret <Auth0 M2M client secret>
+   pulumi config set        packheavy:enableAuth0             true
    ```
-4. **`pulumi up`** — this provisions Cognito, the hosted-UI domain,
-   and prints `cognitoGoogleRedirectUri` as a stack output, e.g.
-   `https://packheavy-auth-12345678.auth.ap-southeast-2.amazoncognito.com/oauth2/idpresponse`.
-5. **Add that exact URL** as an Authorised redirect URI on the Google
+5. **`pulumi up`** — provisions the Auth0 application, the Google
+   connection, the post-login allowlist Action, and prints
+   `auth0GoogleRedirectUri` as a stack output, e.g.
+   `https://packheavy.au.auth0.com/login/callback`.
+6. **Add that exact URL** as an Authorised redirect URI on the Google
    OAuth client. (No `pulumi up` needed.)
-6. Redeploy the app image so the new `COGNITO_*` env vars take effect:
+7. Redeploy the app image so the new `AUTH0_*` env vars take effect:
    ```sh
    pulumi config set packheavy:imageTag $(git rev-parse --short HEAD)
    pulumi up
    ```
-7. Open `https://packheavy.benkolera.com`, click "Sign in with Cognito",
+8. Open `https://packheavy.benkolera.com`, click "Sign in with Auth0",
    complete Google OAuth — first sign-in upserts the user.
 
-If anyone other than `adminEmail` tries to sign in, the pre-sign-up
-Lambda throws and Cognito refuses to create the user.
+If anyone other than `adminEmail` tries to sign in, the post-login
+Action calls `api.access.deny(...)` and Auth0 refuses the login.
 
 ## Useful commands
 

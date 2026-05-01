@@ -69,14 +69,14 @@ export function buildCompute(args: Args): ComputeResult {
                 args.database.masterUserSecretArn,
                 args.identity.clientSecretArn,
             ])
-            .apply(([skb, tss, master, cog]) =>
+            .apply(([skb, tss, master, auth]) =>
                 JSON.stringify({
                     Version: "2012-10-17",
                     Statement: [
                         {
                             Effect: "Allow",
                             Action: ["secretsmanager:GetSecretValue"],
-                            Resource: [skb, tss, master ?? "", cog ?? ""].filter(Boolean),
+                            Resource: [skb, tss, master ?? "", auth ?? ""].filter(Boolean),
                         },
                     ],
                 }),
@@ -144,7 +144,6 @@ export function buildCompute(args: Args): ComputeResult {
                 args.database.name,
                 args.database.user,
                 logGroup.name,
-                args.identity.userPoolId,
                 args.identity.clientId,
                 args.identity.clientSecretArn,
                 args.identity.domain,
@@ -152,7 +151,7 @@ export function buildCompute(args: Args): ComputeResult {
             ])
             .apply(([
                 img, skbArn, tssArn, masterArn, dbHost, dbPort, dbName, dbUser, lg,
-                cogPoolId, cogClientId, cogSecretArn, cogDomain, cogIssuer,
+                authClientId, authSecretArn, authDomain, authIssuer,
             ]) => {
                 const baseEnv = [
                     { name: "PHX_SERVER", value: "true" },
@@ -164,12 +163,11 @@ export function buildCompute(args: Args): ComputeResult {
                     { name: "DATABASE_NAME", value: dbName ?? "" },
                     { name: "DATABASE_USER", value: dbUser ?? "" },
                 ];
-                const cognitoEnv = cogPoolId
+                const auth0Env = authClientId
                     ? [
-                          { name: "COGNITO_USER_POOL_ID", value: cogPoolId },
-                          { name: "COGNITO_CLIENT_ID", value: cogClientId ?? "" },
-                          { name: "COGNITO_DOMAIN", value: cogDomain ?? "" },
-                          { name: "COGNITO_ISSUER", value: cogIssuer ?? "" },
+                          { name: "AUTH0_CLIENT_ID", value: authClientId },
+                          { name: "AUTH0_DOMAIN", value: authDomain ?? "" },
+                          { name: "AUTH0_ISSUER", value: authIssuer ?? "" },
                       ]
                     : [];
 
@@ -180,8 +178,8 @@ export function buildCompute(args: Args): ComputeResult {
                     // want the password key (user is already in env).
                     { name: "DATABASE_PASSWORD", valueFrom: `${masterArn}:password::` },
                 ];
-                const cognitoSecrets = cogSecretArn
-                    ? [{ name: "COGNITO_CLIENT_SECRET", valueFrom: cogSecretArn }]
+                const auth0Secrets = authSecretArn
+                    ? [{ name: "AUTH0_CLIENT_SECRET", valueFrom: authSecretArn }]
                     : [];
 
                 return JSON.stringify([
@@ -190,8 +188,8 @@ export function buildCompute(args: Args): ComputeResult {
                         image: img,
                         essential: true,
                         portMappings: [{ containerPort: 4000, protocol: "tcp" }],
-                        environment: [...baseEnv, ...cognitoEnv],
-                        secrets: [...baseSecrets, ...cognitoSecrets],
+                        environment: [...baseEnv, ...auth0Env],
+                        secrets: [...baseSecrets, ...auth0Secrets],
                         logConfiguration: {
                             logDriver: "awslogs",
                             options: {

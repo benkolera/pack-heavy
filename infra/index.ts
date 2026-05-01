@@ -16,11 +16,14 @@ const config = {
     hostedZoneId: cfg.require("hostedZoneId"),
     imageTag: cfg.require("imageTag"),
     running: cfg.requireBoolean("running"),
-    enableCognito: cfg.requireBoolean("enableCognito"),
-    // Required only when enableCognito is true; identity.ts validates.
+    enableAuth0: cfg.requireBoolean("enableAuth0"),
+    // Required only when enableAuth0 is true; identity.ts validates.
     adminEmail: cfg.getSecret("adminEmail"),
     googleClientId: cfg.getSecret("googleClientId"),
     googleClientSecret: cfg.getSecret("googleClientSecret"),
+    auth0Domain: cfg.getSecret("auth0Domain"),
+    auth0MgmtClientId: cfg.getSecret("auth0MgmtClientId"),
+    auth0MgmtClientSecret: cfg.getSecret("auth0MgmtClientSecret"),
 };
 
 const fqdn = `${config.subdomain}.${config.domain}`;
@@ -38,11 +41,14 @@ const database = buildDatabase({
 });
 
 const identity = buildIdentity({
-    enabled: config.enableCognito,
+    enabled: config.enableAuth0,
     fqdn,
     adminEmail: config.adminEmail,
     googleClientId: config.googleClientId,
     googleClientSecret: config.googleClientSecret,
+    auth0Domain: config.auth0Domain,
+    auth0MgmtClientId: config.auth0MgmtClientId,
+    auth0MgmtClientSecret: config.auth0MgmtClientSecret,
 });
 
 const compute = buildCompute({
@@ -75,13 +81,10 @@ if (config.running) {
 export const albDnsName = edge.albDnsName;
 export const ecrRepositoryUrl = registry.repository.repositoryUrl;
 export const databaseEndpoint = database.endpoint;
-export const cognitoUserPoolId = identity.userPoolId;
-export const cognitoClientId = identity.clientId;
-export const cognitoDomain = identity.domain;
-export const cognitoIssuer = identity.issuer;
+export const auth0ClientId = identity.clientId;
+export const auth0Domain = identity.domain;
+export const auth0Issuer = identity.issuer;
 // Convenience: paste this URL into your Google OAuth client's
-// "Authorised redirect URIs" after `pulumi up` provisions Cognito.
-export const cognitoGoogleRedirectUri = identity.domain.apply((d) =>
-    d ? `${d}/oauth2/idpresponse` : undefined,
-);
+// "Authorised redirect URIs" after `pulumi up` provisions Auth0.
+export const auth0GoogleRedirectUri = identity.googleRedirectUri;
 export const url = pulumi.interpolate`https://${fqdn}`;

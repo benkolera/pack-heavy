@@ -1,5 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
+import * as auth0 from "@pulumi/auth0";
 
 interface Args {
     enabled: boolean;
@@ -7,226 +8,177 @@ interface Args {
     adminEmail?: pulumi.Output<string>;
     googleClientId?: pulumi.Output<string>;
     googleClientSecret?: pulumi.Output<string>;
+    auth0Domain?: pulumi.Output<string>;
+    auth0MgmtClientId?: pulumi.Output<string>;
+    auth0MgmtClientSecret?: pulumi.Output<string>;
 }
 
 export interface IdentityResult {
-    userPoolId: pulumi.Output<string | undefined>;
     clientId: pulumi.Output<string | undefined>;
     clientSecretArn: pulumi.Output<string | undefined>;
     domain: pulumi.Output<string | undefined>;
     issuer: pulumi.Output<string | undefined>;
+    googleRedirectUri: pulumi.Output<string | undefined>;
 }
 
 const undef = pulumi.output<string | undefined>(undefined);
 
 const disabled: IdentityResult = {
-    userPoolId: undef,
     clientId: undef,
     clientSecretArn: undef,
     domain: undef,
     issuer: undef,
+    googleRedirectUri: undef,
 };
 
-// Cognito user pool federated to Google, with hosted UI enabled. The
-// ECS task does the OAuth code-exchange server-side against
-// `<domain>.auth.<region>.amazoncognito.com/oauth2/token`, so the task
-// needs internet egress (NAT gateway in network.ts).
+// Auth0 tenant configured for Universal Login with Google as the only
+// connection. A post-login Action denies any login whose email isn't
+// `adminEmail`.
 //
-// Defence-in-depth allowlist: a pre-sign-up Lambda blocks every email
-// that isn't `adminEmail`. Even if the Google OAuth client were
-// misconfigured to allow any Google account, no Cognito user would be
-// created for them.
+// You provision the tenant + a Management API M2M client manually
+// (Auth0 doesn't expose tenant creation via API). Required scopes on
+// the M2M client: read/create/update/delete on clients, connections,
+// actions, and triggers.
 export function buildIdentity(args: Args): IdentityResult {
     if (!args.enabled) {
         return disabled;
     }
 
-    if (!args.adminEmail || !args.googleClientId || !args.googleClientSecret) {
+    if (
+        !args.adminEmail ||
+        !args.googleClientId ||
+        !args.googleClientSecret ||
+        !args.auth0Domain ||
+        !args.auth0MgmtClientId ||
+        !args.auth0MgmtClientSecret
+    ) {
         throw new Error(
-            "identity.ts: enableCognito=true requires packheavy:adminEmail, " +
-            "packheavy:googleClientId (secret), packheavy:googleClientSecret (secret).",
+            "identity.ts: enableAuth0=true requires packheavy:adminEmail, " +
+            "packheavy:googleClientId, packheavy:googleClientSecret, " +
+            "packheavy:auth0Domain, packheavy:auth0MgmtClientId, " +
+            "packheavy:auth0MgmtClientSecret.",
         );
     }
 
-    const region = aws.config.region!;
-    const accountId = aws.getCallerIdentity({}).then((c) => c.accountId);
-
-    // -- Pre-sign-up Lambda: email allowlist ---------------------------------
-
-    const lambdaRole = new aws.iam.Role("cognito-presignup-role", {
-        assumeRolePolicy: JSON.stringify({
-            Version: "2012-10-17",
-            Statement: [
-                {
-                    Effect: "Allow",
-                    Principal: { Service: "lambda.amazonaws.com" },
-                    Action: "sts:AssumeRole",
-                },
-            ],
-        }),
-        managedPolicyArns: [
-            "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-        ],
+    const tenant = new auth0.Provider("auth0-tenant", {
+        domain: args.auth0Domain,
+        clientId: args.auth0MgmtClientId,
+        clientSecret: args.auth0MgmtClientSecret,
     });
 
-    // Inline ESM Node.js. Auto-confirms the allowlisted email and
-    // auto-links its Google identity so the user lands signed-in
-    // without a Cognito-side confirmation step.
-    const presignupCode = pulumi.interpolate`
-exports.handler = async (event) => {
-  const allow = ${args.adminEmail.apply((e) => JSON.stringify(e))};
-  const email = (event.request && event.request.userAttributes && event.request.userAttributes.email || "").toLowerCase();
-  if (email !== allow.toLowerCase()) {
-    throw new Error("Email not on allowlist: " + email);
-  }
-  event.response.autoConfirmUser = true;
-  event.response.autoVerifyEmail = true;
-  return event;
-};
-`.apply((s) => s);
+    const tenantOpts = { provider: tenant } as const;
 
-    const presignupZip = presignupCode.apply(
-        (code) =>
-            new pulumi.asset.AssetArchive({
-                "index.js": new pulumi.asset.StringAsset(code),
-            }),
-    );
+    // -- Application (regular web app) ---------------------------------------
 
-    const presignupFn = new aws.lambda.Function("cognito-presignup", {
-        runtime: "nodejs20.x",
-        handler: "index.handler",
-        role: lambdaRole.arn,
-        code: presignupZip,
-        timeout: 5,
-    });
-
-    new aws.lambda.Permission("cognito-presignup-invoke", {
-        action: "lambda:InvokeFunction",
-        function: presignupFn.name,
-        principal: "cognito-idp.amazonaws.com",
-        sourceArn: pulumi.interpolate`arn:aws:cognito-idp:${region}:${accountId}:userpool/*`,
-    });
-
-    // -- User pool ------------------------------------------------------------
-
-    const userPool = new aws.cognito.UserPool("packheavy", {
-        name: "packheavy",
-        usernameAttributes: ["email"],
-        autoVerifiedAttributes: ["email"],
-        adminCreateUserConfig: {
-            allowAdminCreateUserOnly: true,
-        },
-        passwordPolicy: {
-            minimumLength: 12,
-            requireLowercase: true,
-            requireUppercase: true,
-            requireNumbers: true,
-            requireSymbols: true,
-            temporaryPasswordValidityDays: 1,
-        },
-        // Schema must declare email as required+mutable so the
-        // pre-sign-up Lambda can read it from request.userAttributes.
-        schemas: [
-            {
-                name: "email",
-                attributeDataType: "String",
-                required: true,
-                mutable: true,
-                stringAttributeConstraints: { minLength: "5", maxLength: "256" },
-            },
-        ],
-        lambdaConfig: {
-            preSignUp: presignupFn.arn,
-        },
-        accountRecoverySetting: {
-            recoveryMechanisms: [{ name: "verified_email", priority: 1 }],
-        },
-        deletionProtection: "ACTIVE",
-    });
-
-    // -- Hosted-UI domain -----------------------------------------------------
-    // Globally unique within the region. Suffix with last 8 chars of
-    // account ID — short, stable, and avoids `packheavy-auth` clashing
-    // with a different account using the same name.
-    const domainPrefix = pulumi.output(accountId).apply(
-        (id) => `packheavy-auth-${id.slice(-8)}`,
-    );
-
-    const userPoolDomain = new aws.cognito.UserPoolDomain("packheavy-auth", {
-        domain: domainPrefix,
-        userPoolId: userPool.id,
-    });
-
-    // -- Google IDP -----------------------------------------------------------
-
-    const googleIdp = new aws.cognito.IdentityProvider("google", {
-        userPoolId: userPool.id,
-        providerName: "Google",
-        providerType: "Google",
-        providerDetails: {
-            authorize_scopes: "openid email profile",
-            client_id: args.googleClientId,
-            client_secret: args.googleClientSecret,
-        },
-        attributeMapping: {
-            email: "email",
-            username: "sub",
-        },
-    });
-
-    // -- App client -----------------------------------------------------------
-
-    const userPoolClient = new aws.cognito.UserPoolClient(
+    const app = new auth0.Client(
         "packheavy",
         {
-            userPoolId: userPool.id,
-            generateSecret: true,
-            allowedOauthFlowsUserPoolClient: true,
-            allowedOauthFlows: ["code"],
-            allowedOauthScopes: ["openid", "email", "profile"],
-            callbackUrls: [`https://${args.fqdn}/auth/user/cognito/callback`],
-            logoutUrls: [`https://${args.fqdn}/`],
-            supportedIdentityProviders: ["Google"],
-            preventUserExistenceErrors: "ENABLED",
-            // Cognito-side; AshAuth holds its own session.
-            accessTokenValidity: 60,
-            idTokenValidity: 60,
-            refreshTokenValidity: 30,
-            tokenValidityUnits: {
-                accessToken: "minutes",
-                idToken: "minutes",
-                refreshToken: "days",
-            },
-            explicitAuthFlows: ["ALLOW_REFRESH_TOKEN_AUTH"],
+            name: "packheavy",
+            appType: "regular_web",
+            oidcConformant: true,
+            grantTypes: ["authorization_code", "refresh_token"],
+            callbacks: [`https://${args.fqdn}/auth/user/auth0/callback`],
+            allowedLogoutUrls: [`https://${args.fqdn}/`],
         },
-        // Client must be created after the IDP is registered or
-        // `supportedIdentityProviders: ["Google"]` is rejected.
-        { dependsOn: [googleIdp] },
+        tenantOpts,
+    );
+
+    // Separate resource for the client secret in v1+ of the underlying
+    // terraform-provider-auth0. `clientSecretPost` is the auth method
+    // AshAuthentication's oauth2 strategy uses by default.
+    const appCreds = new auth0.ClientCredentials(
+        "packheavy-credentials",
+        {
+            clientId: app.clientId,
+            authenticationMethod: "client_secret_post",
+        },
+        tenantOpts,
+    );
+
+    // -- Google connection ---------------------------------------------------
+
+    const googleConn = new auth0.Connection(
+        "google",
+        {
+            name: "google-oauth2",
+            strategy: "google-oauth2",
+            options: {
+                clientId: args.googleClientId,
+                clientSecret: args.googleClientSecret,
+                scopes: ["email", "profile"],
+            },
+        },
+        tenantOpts,
+    );
+
+    new auth0.ConnectionClients(
+        "google-clients",
+        {
+            connectionId: googleConn.id,
+            enabledClients: [app.clientId],
+        },
+        tenantOpts,
+    );
+
+    // -- Post-login allowlist Action -----------------------------------------
+
+    const allowlistCode = args.adminEmail.apply(
+        (email) => `exports.onExecutePostLogin = async (event, api) => {
+  const allow = ${JSON.stringify(email)};
+  const userEmail = (event.user && event.user.email || "").toLowerCase();
+  if (userEmail !== allow.toLowerCase()) {
+    api.access.deny("Email not on allowlist: " + userEmail);
+  }
+};
+`,
+    );
+
+    const allowlistAction = new auth0.Action(
+        "email-allowlist",
+        {
+            name: "packheavy-email-allowlist",
+            code: allowlistCode,
+            deploy: true,
+            supportedTriggers: { id: "post-login", version: "v3" },
+        },
+        tenantOpts,
+    );
+
+    new auth0.TriggerActions(
+        "post-login-actions",
+        {
+            trigger: "post-login",
+            actions: [{ id: allowlistAction.id, displayName: allowlistAction.name }],
+        },
+        { ...tenantOpts, dependsOn: [allowlistAction] },
     );
 
     // -- Wrap client secret in Secrets Manager so the ECS task can pull it
     //    via the existing VPC interface endpoint, matching the pattern used
     //    for SECRET_KEY_BASE / TOKEN_SIGNING_SECRET / DB master password.
 
-    const clientSecretSecret = new aws.secretsmanager.Secret("cognito-client-secret", {
-        name: "packheavy/cognito-client-secret",
-        description: "Cognito app client secret",
+    const clientSecretSecret = new aws.secretsmanager.Secret("auth0-client-secret", {
+        name: "packheavy/auth0-client-secret",
+        description: "Auth0 application client secret",
         recoveryWindowInDays: 0,
     });
 
-    new aws.secretsmanager.SecretVersion("cognito-client-secret-v", {
+    new aws.secretsmanager.SecretVersion("auth0-client-secret-v", {
         secretId: clientSecretSecret.id,
-        secretString: userPoolClient.clientSecret,
+        secretString: appCreds.clientSecret,
     });
 
-    const issuer = pulumi.interpolate`https://cognito-idp.${region}.amazonaws.com/${userPool.id}`;
-    const domainUrl = pulumi.interpolate`https://${userPoolDomain.domain}.auth.${region}.amazoncognito.com`;
+    const issuer = pulumi.interpolate`https://${args.auth0Domain}/`;
+    const domainUrl = pulumi.interpolate`https://${args.auth0Domain}`;
+    // Paste this URL into your Google OAuth client's "Authorised redirect
+    // URIs" so Auth0 can finish the OIDC handshake with Google.
+    const googleRedirect = pulumi.interpolate`https://${args.auth0Domain}/login/callback`;
 
     return {
-        userPoolId: userPool.id.apply((v): string | undefined => v),
-        clientId: userPoolClient.id.apply((v): string | undefined => v),
+        clientId: app.clientId.apply((v): string | undefined => v),
         clientSecretArn: clientSecretSecret.arn.apply((v): string | undefined => v),
         domain: domainUrl.apply((v): string | undefined => v),
         issuer: issuer.apply((v): string | undefined => v),
+        googleRedirectUri: googleRedirect.apply((v): string | undefined => v),
     };
 }

@@ -43,7 +43,12 @@ defmodule PackheavyWeb.Router do
       live "/trips", TripLive.Index, :index
       live "/trips/new", TripLive.Index, :new
       live "/trips/:id", TripLive.Show, :show
+      live "/backup", BackupLive, :index
     end
+
+    # Backup export needs the regular controller pipeline (not LV) so
+    # the browser can stream the file as a download.
+    get "/backup/export", BackupController, :export
   end
 
   scope "/", PackheavyWeb do

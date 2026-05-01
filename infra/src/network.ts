@@ -122,8 +122,8 @@ export function buildNetwork(args: Args): Result {
         }
 
         // Single NAT in the first public subnet → 0.0.0.0/0 from the first
-        // private subnet's route table. Needed for Cognito hosted UI
-        // (`*.auth.<region>.amazoncognito.com`) which has no PrivateLink.
+        // private subnet's route table. Needed for the Auth0 tenant
+        // endpoints (`*.auth0.com`) which have no PrivateLink.
         // ~$32/mo while running, $0 when parked since the whole block is
         // running-gated.
         const eip = new aws.ec2.Eip("nat-eip", { domain: "vpc" });

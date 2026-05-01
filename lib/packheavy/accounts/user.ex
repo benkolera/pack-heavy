@@ -26,7 +26,7 @@ defmodule Packheavy.Accounts.User do
       # with MIX_ENV=prod, so this branch is skipped at compile time
       # and the password DSL never lands in the release — there is no
       # /sign-in form, no `register_with_password` action, no way to
-      # set hashed_password from the running app. Prod auth is Cognito
+      # set hashed_password from the running app. Prod auth is Auth0
       # → Google only.
       if Mix.env() in [:dev, :test] do
         password :password do
@@ -34,26 +34,25 @@ defmodule Packheavy.Accounts.User do
         end
       end
 
-      # Cognito-fronted Google SSO. Registration is enabled so the
-      # very first sign-in creates the user; the user pool's
-      # pre-sign-up Lambda allowlist (set to packheavy:adminEmail in
-      # the Pulumi stack) ensures only that one email can ever land
-      # here.
-      oauth2 :cognito do
+      # Auth0-fronted Google SSO. Registration is enabled so the very
+      # first sign-in creates the user; the tenant's post-login
+      # allowlist Action (set to packheavy:adminEmail in the Pulumi
+      # stack) ensures only that one email can ever land here.
+      oauth2 :auth0 do
         client_id Packheavy.Secrets
         client_secret Packheavy.Secrets
         base_url Packheavy.Secrets
         redirect_uri Packheavy.Secrets
-        authorize_url fn _, _ -> {:ok, "/oauth2/authorize"} end
-        token_url fn _, _ -> {:ok, "/oauth2/token"} end
-        user_url fn _, _ -> {:ok, "/oauth2/userInfo"} end
+        authorize_url fn _, _ -> {:ok, "/authorize"} end
+        token_url fn _, _ -> {:ok, "/oauth/token"} end
+        user_url fn _, _ -> {:ok, "/userinfo"} end
         authorization_params scope: "openid profile email"
-        register_action_name :register_with_cognito
+        register_action_name :register_with_auth0
         # Disabled because:
         #   1. The password strategy only exists in dev/test builds.
-        #   2. Cognito's pre-sign-up Lambda allowlist (adminEmail) is
+        #   2. The Auth0 post-login allowlist Action (adminEmail) is
         #      the actual takeover prevention — only one Google
-        #      account can ever produce a Cognito user.
+        #      account can ever produce a successful login.
         # The default-on guard would require a confirmation add-on on
         # the password strategy, which is overkill for a single-user,
         # dev-only password path.
@@ -84,8 +83,8 @@ defmodule Packheavy.Accounts.User do
       filter expr(email == ^arg(:email))
     end
 
-    create :register_with_cognito do
-      description "Upsert-by-email registration triggered by a Cognito OAuth callback"
+    create :register_with_auth0 do
+      description "Upsert-by-email registration triggered by an Auth0 OAuth callback"
       argument :user_info, :map, allow_nil?: false
       argument :oauth_tokens, :map, allow_nil?: false
       upsert? true
@@ -114,7 +113,7 @@ defmodule Packheavy.Accounts.User do
       public? true
     end
 
-    # Nullable so Cognito-only users (no local password) can exist.
+    # Nullable so Auth0-only users (no local password) can exist.
     # Password strategy still validates presence at sign-in time.
     attribute :hashed_password, :string do
       allow_nil? true
