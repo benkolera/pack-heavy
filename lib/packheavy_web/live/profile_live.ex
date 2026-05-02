@@ -129,6 +129,27 @@ defmodule PackheavyWeb.ProfileLive do
             />
           </label>
 
+          <label class="flex flex-col gap-1">
+            <span class="text-xs opacity-70">PLB Hex ID / UIN</span>
+            <input
+              type="text"
+              name={@form[:plb_hex_id].name}
+              value={@form[:plb_hex_id].value}
+              placeholder="15-char hex"
+              class="input input-bordered input-sm w-full font-mono"
+            />
+          </label>
+
+          <label class="flex flex-col gap-1">
+            <span class="text-xs opacity-70">PLB serial</span>
+            <input
+              type="text"
+              name={@form[:plb_serial].name}
+              value={@form[:plb_serial].value}
+              class="input input-bordered input-sm w-full"
+            />
+          </label>
+
           <label class="flex flex-col gap-1 sm:col-span-2">
             <span class="text-xs opacity-70">Default hiker weight (kg)</span>
             <input

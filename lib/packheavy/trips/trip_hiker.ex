@@ -45,6 +45,8 @@ defmodule Packheavy.Trips.TripHiker do
     :satellite_sms,
     :location_tracker_url,
     :location_tracker_password,
+    :plb_hex_id,
+    :plb_serial,
     :weight_kg,
     :notes,
     :position
@@ -84,6 +86,14 @@ defmodule Packheavy.Trips.TripHiker do
       public? true
       sensitive? true
     end
+
+    # PLB (Personal Locator Beacon) registration details. Recorded so
+    # the handout can hand them to emergency contacts / SAR if the
+    # beacon ever fires. Hex ID (UIN) is the 15-character globally
+    # unique identifier transmitted on activation; serial is the
+    # manufacturer's hardware serial.
+    attribute :plb_hex_id, :string, public?: true
+    attribute :plb_serial, :string, public?: true
 
     attribute :weight_kg, :decimal, public?: true
     attribute :notes, :string, public?: true

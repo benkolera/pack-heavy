@@ -107,6 +107,8 @@ defmodule Packheavy.Accounts.User do
         :satellite_sms,
         :location_tracker_url,
         :location_tracker_password,
+        :plb_hex_id,
+        :plb_serial,
         :default_hiker_weight_kg,
         :default_hiker_notes
       ]
@@ -156,6 +158,10 @@ defmodule Packheavy.Accounts.User do
       public? true
       sensitive? true
     end
+
+    # PLB defaults; copied into the leader TripHiker on trip create.
+    attribute :plb_hex_id, :string, public?: true
+    attribute :plb_serial, :string, public?: true
 
     attribute :default_hiker_weight_kg, :decimal, public?: true
     attribute :default_hiker_notes, :string, public?: true

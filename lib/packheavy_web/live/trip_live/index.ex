@@ -78,6 +78,8 @@ defmodule PackheavyWeb.TripLive.Index do
           satellite_sms: user.satellite_sms,
           location_tracker_url: user.location_tracker_url,
           location_tracker_password: user.location_tracker_password,
+          plb_hex_id: user.plb_hex_id,
+          plb_serial: user.plb_serial,
           weight_kg: user.default_hiker_weight_kg,
           notes: user.default_hiker_notes,
           position: 0

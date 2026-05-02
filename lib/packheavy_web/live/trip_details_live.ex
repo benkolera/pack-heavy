@@ -443,6 +443,10 @@ defmodule PackheavyWeb.TripDetailsLive do
                 <span :if={h.role == :leader} class="badge badge-primary badge-xs ml-1">Leader</span>
               </div>
               <div :if={h.phone} class="opacity-70">📱 {h.phone}</div>
+              <div :if={h.plb_hex_id || h.plb_serial} class="opacity-70 text-xs">
+                <span :if={h.plb_hex_id}>📡 PLB <span class="font-mono">{h.plb_hex_id}</span></span>
+                <span :if={h.plb_serial} class="ml-2">SN {h.plb_serial}</span>
+              </div>
               <%= if h.role == :leader do %>
                 <div :if={h.satellite_sms} class="opacity-70">🛰 {h.satellite_sms}</div>
                 <div :if={h.location_tracker_url} class="opacity-70">
@@ -490,6 +494,14 @@ defmodule PackheavyWeb.TripDetailsLive do
       <label class="flex flex-col gap-1">
         <span class="text-xs opacity-70">Phone</span>
         <input type="tel" name={@form[:phone].name} value={@form[:phone].value} class="input input-bordered input-sm w-full" />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-xs opacity-70">PLB Hex ID / UIN</span>
+        <input type="text" name={@form[:plb_hex_id].name} value={@form[:plb_hex_id].value} class="input input-bordered input-sm w-full font-mono" placeholder="15-char hex" />
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-xs opacity-70">PLB serial</span>
+        <input type="text" name={@form[:plb_serial].name} value={@form[:plb_serial].value} class="input input-bordered input-sm w-full" />
       </label>
       <%= if @leader? do %>
         <label class="flex flex-col gap-1">

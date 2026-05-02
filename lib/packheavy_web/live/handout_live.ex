@@ -205,6 +205,9 @@ defmodule PackheavyWeb.HandoutLive do
                     <span :if={h.phone}>📱 <a href={"tel:#{h.phone}"} class="link">{h.phone}</a></span>
                     <span :if={h.satellite_sms} class="ml-2">🛰 <a href={"tel:#{h.satellite_sms}"} class="link">{h.satellite_sms}</a></span>
                   </span>
+                  <div :if={h.plb_hex_id || h.plb_serial} class="opacity-70 mt-1 text-xs">
+                    📡 PLB<span :if={h.plb_hex_id} class="ml-1">Hex: <span class="font-mono">{h.plb_hex_id}</span></span><span :if={h.plb_serial} class="ml-2">Serial: {h.plb_serial}</span>
+                  </div>
                   <div :if={h.location_tracker_url} class="opacity-70 break-all mt-1">
                     Tracker: <a href={h.location_tracker_url} class="link link-primary">{h.location_tracker_url}</a><span :if={h.location_tracker_password}> · "{h.location_tracker_password}"</span>
                   </div>
@@ -214,6 +217,9 @@ defmodule PackheavyWeb.HandoutLive do
                 <div>
                   <div class="font-semibold">{h.name}</div>
                   <div :if={h.phone} class="opacity-70">📱 <a href={"tel:#{h.phone}"} class="link">{h.phone}</a></div>
+                  <div :if={h.plb_hex_id || h.plb_serial} class="opacity-70 text-xs">
+                    📡 PLB<span :if={h.plb_hex_id} class="ml-1">Hex: <span class="font-mono">{h.plb_hex_id}</span></span><span :if={h.plb_serial} class="ml-2">Serial: {h.plb_serial}</span>
+                  </div>
                 </div>
               <% end %>
             <% end %>
