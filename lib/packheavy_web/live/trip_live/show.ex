@@ -1288,7 +1288,7 @@ defmodule PackheavyWeb.TripLive.Show do
                   class="opacity-60 mr-1"
                 >{ti.item.brand}</span>{ti.item.title}
               </span>
-              <span class="text-xs opacity-60 shrink-0 tabular-nums whitespace-nowrap">
+              <span class="text-xs opacity-60 shrink-0 tabular-nums whitespace-nowrap ml-auto sm:ml-0">
                 <%= if ti.qty > 1 do %>
                   {ti.item.weight_g || 0}g×{ti.qty}
                 <% else %>
