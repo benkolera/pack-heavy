@@ -86,6 +86,15 @@ export default {
       // `combinedBounds` and then mutates it via `.extend()`.
       const latlngs = entry.leg.track.map((p) => [p.lat, p.lon])
       this._map.flyToBounds(L.latLngBounds(latlngs), { padding: [20, 20] })
+
+      // On narrow viewports the map sits above the legs list, so a Fly
+      // click leaves the user staring at the leg row they just tapped.
+      // Scroll the map into view so the result of the click is visible.
+      // Skipped on viewports wide enough for the side-by-side layout
+      // (lg = 1024 px) where the map is already on screen.
+      if (window.innerWidth < 1024) {
+        this.el.scrollIntoView({ behavior: "smooth", block: "start" })
+      }
     })
 
     this.handleEvent("route:legs-updated", ({ legs }) => {
