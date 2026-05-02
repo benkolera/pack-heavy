@@ -79,7 +79,13 @@ export default {
 
     this.handleEvent("gpx:fly", ({ leg_id }) => {
       const entry = this._polylines.find((p) => p.leg.id === leg_id)
-      if (entry) this._map.flyToBounds(entry.polyline.getBounds(), { padding: [20, 20] })
+      if (!entry) return
+      // Compute fresh bounds from the source track. Reusing
+      // `polyline.getBounds()` was returning the full-route bounds for
+      // the first leg because drawLegs aliases its bounds object into
+      // `combinedBounds` and then mutates it via `.extend()`.
+      const latlngs = entry.leg.track.map((p) => [p.lat, p.lon])
+      this._map.flyToBounds(L.latLngBounds(latlngs), { padding: [20, 20] })
     })
 
     this.handleEvent("route:legs-updated", ({ legs }) => {
@@ -122,7 +128,10 @@ export default {
       })
 
       this._polylines.push({ leg, polyline: pl })
-      const b = pl.getBounds()
+      // Always allocate a fresh bounds for combinedBounds rather than
+      // aliasing leg 0's polyline-bounds object. Without this, later
+      // `.extend(...)` calls mutate the leg 0 bounds we'd reuse on fly.
+      const b = L.latLngBounds(latlngs)
       combinedBounds = combinedBounds ? combinedBounds.extend(b) : b
     })
 
