@@ -103,7 +103,12 @@ defmodule PackheavyWeb.HandoutLive do
     legs_payload_json =
       legs_with_color
       |> Enum.map(fn leg ->
-        %{id: leg.id, name: leg.name, color: leg.color, track: leg.track}
+        %{
+          id: leg.id,
+          name: leg.name,
+          color: leg.color,
+          track: Packheavy.Trips.Helpers.slim_track_for_map(leg.track)
+        }
       end)
       |> Jason.encode!()
 

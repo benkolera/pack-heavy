@@ -31,6 +31,46 @@ defmodule Packheavy.Trips.Helpers do
     Enum.reverse(acc)
   end
 
+  @doc """
+  Slim the canonical track for the **map** payload: lat/lon only,
+  rounded to 5 decimal places (~1 m precision). Drops elevation and
+  cumulative-distance, which the polyline doesn't need. Cuts the
+  per-leg payload by ~70 % vs the raw stored track.
+  """
+  def slim_track_for_map(track) when is_list(track) do
+    Enum.map(track, fn pt ->
+      %{
+        lat: Float.round((track_field(pt, :lat) || 0.0) * 1.0, 5),
+        lon: Float.round((track_field(pt, :lon) || 0.0) * 1.0, 5)
+      }
+    end)
+  end
+
+  @doc """
+  Slim the canonical track for the **elevation chart** payload: just
+  `ele` (1 dp) and `d` (m, integer rounded). Lat/lon are dropped — the
+  chart doesn't need them.
+  """
+  def slim_track_for_chart(track) when is_list(track) do
+    Enum.map(track, fn pt ->
+      ele =
+        case track_field(pt, :ele) do
+          nil -> nil
+          v -> Float.round(v * 1.0, 1)
+        end
+
+      %{
+        ele: ele,
+        d: Float.round((track_field(pt, :d) || 0.0) * 1.0, 0)
+      }
+    end)
+  end
+
+  defp track_field(%{} = m, key) when is_atom(key),
+    do: Map.get(m, key) || Map.get(m, Atom.to_string(key))
+
+  defp track_field(_, _), do: nil
+
   defp haversine(%{lat: lat1, lon: lon1}, %{lat: lat2, lon: lon2}) do
     rlat1 = :math.pi() * lat1 / 180
     rlat2 = :math.pi() * lat2 / 180

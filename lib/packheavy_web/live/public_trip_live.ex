@@ -188,7 +188,12 @@ defmodule PackheavyWeb.PublicTripLive do
     legs_payload_json =
       legs_with_color
       |> Enum.map(fn leg ->
-        %{id: leg.id, name: leg.name, color: leg.color, track: leg.track}
+        %{
+          id: leg.id,
+          name: leg.name,
+          color: leg.color,
+          track: Packheavy.Trips.Helpers.slim_track_for_map(leg.track)
+        }
       end)
       |> Jason.encode!()
 
@@ -376,7 +381,7 @@ defmodule PackheavyWeb.PublicTripLive do
                         phx-update="ignore"
                         data-leg-id={leg.id}
                         data-color={leg.color}
-                        data-track={Jason.encode!(leg.track)}
+                        data-track={Jason.encode!(Packheavy.Trips.Helpers.slim_track_for_chart(leg.track))}
                       >
                         {Phoenix.HTML.raw(leg_elevation_svg(leg))}
                       </div>

@@ -355,7 +355,12 @@ defmodule PackheavyWeb.TripLive.Show do
     |> Enum.with_index()
     |> Enum.map(fn {leg, idx} ->
       color = Enum.at(palette, rem(idx, length(palette)))
-      %{id: leg.id, name: leg.name, color: color, track: leg.track}
+      %{
+        id: leg.id,
+        name: leg.name,
+        color: color,
+        track: Packheavy.Trips.Helpers.slim_track_for_map(leg.track)
+      }
     end)
   end
 
@@ -1619,7 +1624,7 @@ defmodule PackheavyWeb.TripLive.Show do
                   phx-update="ignore"
                   data-leg-id={leg.id}
                   data-color={leg.color}
-                  data-track={Jason.encode!(leg.track)}
+                  data-track={Jason.encode!(Packheavy.Trips.Helpers.slim_track_for_chart(leg.track))}
                 >
                   {Phoenix.HTML.raw(leg_elevation_svg(leg))}
                 </div>
