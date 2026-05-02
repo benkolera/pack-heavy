@@ -251,8 +251,10 @@ defmodule PackheavyWeb.HandoutLive do
 
         <!-- Headline numbers, sat above the route so the reader has
              distance/elevation/calories/pack-weight context immediately
-             before scrolling into the per-leg details. -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 print:grid-cols-4 gap-2">
+             before scrolling into the per-leg details. In print we
+             force a fresh page here so the tile row + the route map
+             don't get split across two pages. -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 print:grid-cols-4 gap-2 print:break-before-page">
           <div :if={@has_legs?} class="card bg-base-200 p-3">
             <div class="text-xs opacity-70">Distance</div>
             <div class="text-lg font-semibold tabular-nums">
@@ -298,7 +300,7 @@ defmodule PackheavyWeb.HandoutLive do
             phx-hook="RouteMap"
             phx-update="ignore"
             data-legs={@legs_payload_json}
-            class="w-full h-[500px] print:h-[420px] rounded"
+            class="w-full h-[500px] print:h-[400px] rounded print:break-inside-avoid"
           >
           </div>
 
