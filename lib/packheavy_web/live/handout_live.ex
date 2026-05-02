@@ -172,44 +172,6 @@ defmodule PackheavyWeb.HandoutLive do
         <% total_distance_m = @legs_with_color |> Enum.map(& &1.distance_m) |> Enum.sum() %>
         <% total_gain_m = @legs_with_color |> Enum.map(& &1.elevation_gain_m) |> Enum.sum() %>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 print:grid-cols-4 gap-2">
-          <div :if={@has_legs?} class="card bg-base-200 p-3">
-            <div class="text-xs opacity-70">Distance</div>
-            <div class="text-lg font-semibold tabular-nums">
-              {:erlang.float_to_binary(total_distance_m / 1000, decimals: 2)} km
-            </div>
-          </div>
-          <div :if={@has_legs?} class="card bg-base-200 p-3">
-            <div class="text-xs opacity-70">Elevation gain</div>
-            <div class="text-lg font-semibold tabular-nums">+{round(total_gain_m)} m</div>
-          </div>
-          <div :if={@has_legs? && time_h} class="card bg-base-200 p-3">
-            <div class="text-xs opacity-70">Walking time</div>
-            <div class="text-lg font-semibold tabular-nums">{Packheavy.Trips.Helpers.format_hours(time_h)}</div>
-          </div>
-          <div class="card bg-base-200 p-3">
-            <div class="text-xs opacity-70">Pack weight</div>
-            <div class="text-lg font-semibold tabular-nums">{:erlang.float_to_binary(loads.full_kg, decimals: 2)} kg</div>
-            <div :if={loads.sidequest_kg > 0} class="text-xs opacity-50 tabular-nums" title="Worn + day-pack only">
-              sidequest: {:erlang.float_to_binary(loads.sidequest_kg, decimals: 2)} kg
-            </div>
-          </div>
-          <div class="card bg-base-200 p-3">
-            <div class="text-xs opacity-70">Calories carried</div>
-            <div class="text-lg font-semibold tabular-nums">{calories} kcal</div>
-          </div>
-          <div :if={active} class="card bg-base-200 p-3">
-            <div class="text-xs opacity-70">Burn (active)</div>
-            <div class="text-lg font-semibold tabular-nums">{active} kcal</div>
-            <div class="text-xs opacity-50">while walking</div>
-          </div>
-          <div :if={resting} class="card bg-base-200 p-3">
-            <div class="text-xs opacity-70">Burn (resting)</div>
-            <div class="text-lg font-semibold tabular-nums">{resting} kcal</div>
-            <div class="text-xs opacity-50">camp/sleep BMR</div>
-          </div>
-        </div>
-
         <!-- Hike overview -->
         <section :if={!empty_overview?(@trip)} class="card bg-base-200 p-4 space-y-2">
           <h2 class="font-semibold">Trip overview</h2>
@@ -286,6 +248,47 @@ defmodule PackheavyWeb.HandoutLive do
             </div>
           </div>
         </section>
+
+        <!-- Headline numbers, sat above the route so the reader has
+             distance/elevation/calories/pack-weight context immediately
+             before scrolling into the per-leg details. -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 print:grid-cols-4 gap-2">
+          <div :if={@has_legs?} class="card bg-base-200 p-3">
+            <div class="text-xs opacity-70">Distance</div>
+            <div class="text-lg font-semibold tabular-nums">
+              {:erlang.float_to_binary(total_distance_m / 1000, decimals: 2)} km
+            </div>
+          </div>
+          <div :if={@has_legs?} class="card bg-base-200 p-3">
+            <div class="text-xs opacity-70">Elevation gain</div>
+            <div class="text-lg font-semibold tabular-nums">+{round(total_gain_m)} m</div>
+          </div>
+          <div :if={@has_legs? && time_h} class="card bg-base-200 p-3">
+            <div class="text-xs opacity-70">Walking time</div>
+            <div class="text-lg font-semibold tabular-nums">{Packheavy.Trips.Helpers.format_hours(time_h)}</div>
+          </div>
+          <div class="card bg-base-200 p-3">
+            <div class="text-xs opacity-70">Pack weight</div>
+            <div class="text-lg font-semibold tabular-nums">{:erlang.float_to_binary(loads.full_kg, decimals: 2)} kg</div>
+            <div :if={loads.sidequest_kg > 0} class="text-xs opacity-50 tabular-nums" title="Worn + day-pack only">
+              sidequest: {:erlang.float_to_binary(loads.sidequest_kg, decimals: 2)} kg
+            </div>
+          </div>
+          <div class="card bg-base-200 p-3">
+            <div class="text-xs opacity-70">Calories carried</div>
+            <div class="text-lg font-semibold tabular-nums">{calories} kcal</div>
+          </div>
+          <div :if={active} class="card bg-base-200 p-3">
+            <div class="text-xs opacity-70">Burn (active)</div>
+            <div class="text-lg font-semibold tabular-nums">{active} kcal</div>
+            <div class="text-xs opacity-50">while walking</div>
+          </div>
+          <div :if={resting} class="card bg-base-200 p-3">
+            <div class="text-xs opacity-70">Burn (resting)</div>
+            <div class="text-lg font-semibold tabular-nums">{resting} kcal</div>
+            <div class="text-xs opacity-50">camp/sleep BMR</div>
+          </div>
+        </div>
 
         <!-- Route -->
         <section :if={@has_legs?} class="card bg-base-200 p-4 space-y-4">
