@@ -197,7 +197,7 @@ defmodule PackheavyWeb.HandoutLive do
         <% total_gain_m = @legs_with_color |> Enum.map(& &1.elevation_gain_m) |> Enum.sum() %>
         
     <!-- Hike overview -->
-        <section :if={!empty_overview?(@trip)} class="card bg-base-200 p-4 space-y-2">
+        <section :if={!empty_overview?(@trip)} class="card bg-base-200 p-4 space-y-2 print:break-inside-avoid">
           <h2 class="font-semibold">Trip overview</h2>
           <dl class="text-sm grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
             <div :if={@trip.area} class="sm:col-span-2">
