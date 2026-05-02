@@ -455,7 +455,7 @@ defmodule PackheavyWeb.PublicTripLive do
                       <span class="basis-full sm:basis-auto min-w-0 sm:truncate">
                         <span
                           :if={ti.item.brand}
-                          class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom"
+                          class="opacity-60 mr-1"
                         >
                           {ti.item.brand}
                         </span>

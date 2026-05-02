@@ -1058,7 +1058,7 @@ defmodule PackheavyWeb.TripLive.Show do
               <span class="basis-full sm:basis-auto sm:flex-1 min-w-0 sm:truncate text-sm">
                 <span
                   :if={ti.item.brand}
-                  class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom"
+                  class="opacity-60 mr-1"
                 >{ti.item.brand}</span>{ti.item.title}
                 <span :if={ti.source == :kit} class="badge badge-xs ml-1">kit</span>
               </span>
@@ -1285,7 +1285,7 @@ defmodule PackheavyWeb.TripLive.Show do
               <span class="basis-full sm:basis-auto sm:flex-1 min-w-0 sm:truncate text-sm">
                 <span
                   :if={ti.item.brand}
-                  class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom"
+                  class="opacity-60 mr-1"
                 >{ti.item.brand}</span>{ti.item.title}
               </span>
               <span class="text-xs opacity-60 shrink-0 tabular-nums whitespace-nowrap">
