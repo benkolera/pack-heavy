@@ -534,13 +534,26 @@ defmodule PackheavyWeb.PublicTripLive do
 
       _ ->
         {min_e, max_e} = samples |> Enum.map(& &1.ele) |> Enum.min_max()
+        # Floor the y-axis range at 100 m so flat legs don't visually
+        # exaggerate noise; pad symmetrically around the midpoint.
+        min_span = 100.0
+        data_span = max_e - min_e
+
+        {view_min, view_max} =
+          if data_span < min_span do
+            pad = (min_span - data_span) / 2.0
+            {min_e - pad, max_e + pad}
+          else
+            {min_e, max_e}
+          end
+
         total_d = samples |> List.last() |> Map.get(:d) |> max(1.0)
-        e_span = max(max_e - min_e, 1.0)
+        e_span = max(view_max - view_min, 1.0)
 
         plotted =
           Enum.map(samples, fn s ->
             x = s.d / total_d * 800
-            y = 200 - (s.ele - min_e) / e_span * 180 - 10
+            y = 200 - (s.ele - view_min) / e_span * 180 - 10
             Map.merge(s, %{x: x, y: y})
           end)
 
@@ -561,8 +574,8 @@ defmodule PackheavyWeb.PublicTripLive do
         <svg viewBox="0 0 800 200" class="w-full h-32 select-none" style="color: #{color}">
           #{segments_svg}
           <polyline points="#{polyline_str}" fill="none" stroke="currentColor" stroke-width="1.5" />
-          <text x="4" y="14" class="fill-base-content text-xs opacity-70">#{round(max_e)} m</text>
-          <text x="4" y="196" class="fill-base-content text-xs opacity-70">#{round(min_e)} m</text>
+          <text x="4" y="14" class="fill-base-content text-xs opacity-70">#{round(view_max)} m</text>
+          <text x="4" y="196" class="fill-base-content text-xs opacity-70">#{round(view_min)} m</text>
           <text x="796" y="196" text-anchor="end" class="fill-base-content text-xs opacity-70">#{:erlang.float_to_binary(total_d / 1000, decimals: 1)} km</text>
         </svg>
         """
