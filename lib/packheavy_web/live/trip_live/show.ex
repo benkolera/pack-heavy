@@ -32,6 +32,8 @@ defmodule PackheavyWeb.TripLive.Show do
       )
       |> reload()
 
+    if connected?(socket), do: send(self(), :push_track_data)
+
     {:ok, assign(socket, :editing_details?, false)}
   end
 
@@ -340,13 +342,27 @@ defmodule PackheavyWeb.TripLive.Show do
     end
   end
 
-  # Pushes a `route:legs-updated` event to the RouteMap hook with the
-  # current canonical legs payload. Used after any leg mutation so the
-  # already-mounted Leaflet map (which has `phx-update="ignore"`)
-  # refreshes its polylines without a full page reload.
-  defp push_legs_update(socket) do
-    push_event(socket, "route:legs-updated", %{legs: build_legs_payload(socket.assigns.trip)})
+  # Pushes the map's leg polylines AND each chart's elevation track
+  # to the already-mounted hooks. The track data lives outside the
+  # initial render diff (no `data-legs` / `data-track` attributes
+  # remain in the HTML); these events are how the hooks get their
+  # data on first connect AND after any leg mutation.
+  defp push_track_data(socket) do
+    legs = socket.assigns.trip.trip_legs || []
+
+    chart_tracks =
+      Map.new(legs, fn leg ->
+        {leg.id, Packheavy.Trips.Helpers.slim_track_for_chart(leg.track)}
+      end)
+
+    socket
+    |> push_event("route:legs-updated", %{legs: build_legs_payload(socket.assigns.trip)})
+    |> push_event("chart:tracks", %{tracks: chart_tracks})
   end
+
+  # Backwards-compat shim — older call sites still call push_legs_update
+  # after a leg mutation. Delegate to the unified push.
+  defp push_legs_update(socket), do: push_track_data(socket)
 
   defp build_legs_payload(%{trip_legs: legs}) when is_list(legs) do
     palette = leg_palette()
@@ -434,6 +450,10 @@ defmodule PackheavyWeb.TripLive.Show do
   defp parse_tab(_), do: :plan
 
   @impl true
+  def handle_info(:push_track_data, socket) do
+    {:noreply, push_track_data(socket)}
+  end
+
   def handle_info({:item_picker_confirm, "trip-item-picker", selected}, socket) do
     user = socket.assigns.current_user
     trip_id = socket.assigns.trip_id
@@ -1430,8 +1450,6 @@ defmodule PackheavyWeb.TripLive.Show do
 
     legs_by_day = days_with_legs
 
-    legs_payload_json = assigns.trip |> build_legs_payload() |> Jason.encode!()
-
     assigns =
       assigns
       |> assign(:legs_with_color, legs_with_color)
@@ -1441,7 +1459,6 @@ defmodule PackheavyWeb.TripLive.Show do
       |> assign(:total_gain, total_gain)
       |> assign(:legs_count, legs_count)
       |> assign(:last_index, last_index)
-      |> assign(:legs_payload_json, legs_payload_json)
       |> assign(:leader_kg, leader_kg)
       |> assign(:loads, loads)
       |> assign(:total_time_h, total_time_h)
@@ -1499,7 +1516,6 @@ defmodule PackheavyWeb.TripLive.Show do
           id="trip-route-map"
           phx-hook="RouteMap"
           phx-update="ignore"
-          data-legs={@legs_payload_json}
           class="w-full h-[500px] lg:h-[760px] lg:sticky lg:top-4 rounded order-first lg:order-none"
         >
         </div>
@@ -1624,7 +1640,6 @@ defmodule PackheavyWeb.TripLive.Show do
                   phx-update="ignore"
                   data-leg-id={leg.id}
                   data-color={leg.color}
-                  data-track={Jason.encode!(Packheavy.Trips.Helpers.slim_track_for_chart(leg.track))}
                 >
                   {Phoenix.HTML.raw(leg_elevation_svg(leg))}
                 </div>

@@ -34,10 +34,12 @@ export default {
     this._polylines = []
 
     await loadLeaflet()
-    const legs = JSON.parse(this.el.dataset.legs)
 
-    const first = (legs[0] && legs[0].track && legs[0].track[0]) || { lat: 0, lon: 0 }
-    const map = L.map(this.el).setView([first.lat, first.lon], 13)
+    // Initialise the map with a placeholder centre. The actual leg
+    // tracks arrive via the `route:legs-updated` push_event after
+    // mount, which keeps the (potentially hundreds of KB) GPX
+    // payload out of the initial LiveView phx_reply.
+    const map = L.map(this.el).setView([0, 0], 2)
     L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
       maxZoom: 17,
       attribution:
@@ -60,8 +62,6 @@ export default {
       fillOpacity: 1,
       interactive: false,
     })
-
-    this.drawLegs(legs)
 
     this._handleHover = (e) => {
       const { legId, index } = e.detail

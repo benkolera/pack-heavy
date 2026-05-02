@@ -32,10 +32,32 @@ defmodule PackheavyWeb.HandoutLive do
         ]
       )
 
+    if connected?(socket), do: send(self(), :push_track_data)
+
     {:ok,
      socket
      |> assign(:page_title, "Packheavy: #{trip.name} — handout")
      |> assign(:trip, trip)}
+  end
+
+  @impl true
+  def handle_info(:push_track_data, socket) do
+    legs = socket.assigns.trip.trip_legs || []
+    palette = leg_palette()
+
+    legs_payload =
+      legs
+      |> Enum.with_index()
+      |> Enum.map(fn {leg, idx} ->
+        %{
+          id: leg.id,
+          name: leg.name,
+          color: Enum.at(palette, rem(idx, length(palette))),
+          track: Packheavy.Trips.Helpers.slim_track_for_map(leg.track)
+        }
+      end)
+
+    {:noreply, push_event(socket, "route:legs-updated", %{legs: legs_payload})}
   end
 
   @impl true
@@ -100,18 +122,6 @@ defmodule PackheavyWeb.HandoutLive do
         Map.put(leg, :color, Enum.at(leg_palette(), rem(idx, length(leg_palette()))))
       end)
 
-    legs_payload_json =
-      legs_with_color
-      |> Enum.map(fn leg ->
-        %{
-          id: leg.id,
-          name: leg.name,
-          color: leg.color,
-          track: Packheavy.Trips.Helpers.slim_track_for_map(leg.track)
-        }
-      end)
-      |> Jason.encode!()
-
     legs_by_day_map =
       legs_with_color
       |> Enum.group_by(& &1.day)
@@ -139,7 +149,6 @@ defmodule PackheavyWeb.HandoutLive do
       |> assign(section_calories: section_calories)
       |> assign(legs_with_color: legs_with_color)
       |> assign(legs_by_day: legs_by_day)
-      |> assign(legs_payload_json: legs_payload_json)
       |> assign(has_legs?: has_legs?)
       |> assign(emergency: emergency)
       |> assign(daily: daily)
@@ -374,7 +383,6 @@ defmodule PackheavyWeb.HandoutLive do
             id="handout-route-map"
             phx-hook="RouteMap"
             phx-update="ignore"
-            data-legs={@legs_payload_json}
             class="w-full h-[500px] print:h-[400px] rounded print:break-inside-avoid"
           >
           </div>

@@ -45,6 +45,8 @@ defmodule PackheavyWeb.PublicTripLive do
             authorize?: false
           )
 
+        if connected?(socket), do: send(self(), :push_track_data)
+
         {:ok,
          socket
          |> assign(:page_title, "#{trip.name} · packheavy")
@@ -108,6 +110,34 @@ defmodule PackheavyWeb.PublicTripLive do
   @impl true
   def handle_event("fly-to-leg", %{"id" => id}, socket) do
     {:noreply, push_event(socket, "gpx:fly", %{leg_id: id})}
+  end
+
+  @impl true
+  def handle_info(:push_track_data, socket) do
+    legs = socket.assigns.trip.trip_legs || []
+    palette = leg_palette()
+
+    legs_payload =
+      legs
+      |> Enum.with_index()
+      |> Enum.map(fn {leg, idx} ->
+        %{
+          id: leg.id,
+          name: leg.name,
+          color: Enum.at(palette, rem(idx, length(palette))),
+          track: Packheavy.Trips.Helpers.slim_track_for_map(leg.track)
+        }
+      end)
+
+    chart_tracks =
+      Map.new(legs, fn leg ->
+        {leg.id, Packheavy.Trips.Helpers.slim_track_for_chart(leg.track)}
+      end)
+
+    {:noreply,
+     socket
+     |> push_event("route:legs-updated", %{legs: legs_payload})
+     |> push_event("chart:tracks", %{tracks: chart_tracks})}
   end
 
   @impl true
@@ -185,18 +215,6 @@ defmodule PackheavyWeb.PublicTripLive do
         Map.put(leg, :color, Enum.at(leg_palette(), rem(idx, length(leg_palette()))))
       end)
 
-    legs_payload_json =
-      legs_with_color
-      |> Enum.map(fn leg ->
-        %{
-          id: leg.id,
-          name: leg.name,
-          color: leg.color,
-          track: Packheavy.Trips.Helpers.slim_track_for_map(leg.track)
-        }
-      end)
-      |> Jason.encode!()
-
     legs_by_day_map =
       legs_with_color
       |> Enum.group_by(& &1.day)
@@ -225,7 +243,6 @@ defmodule PackheavyWeb.PublicTripLive do
       |> assign(section_calories: section_calories)
       |> assign(legs_with_color: legs_with_color)
       |> assign(legs_by_day: legs_by_day)
-      |> assign(legs_payload_json: legs_payload_json)
       |> assign(has_legs?: has_legs?)
       |> assign(leader_kg: leader_kg)
       |> assign(loads: loads)
@@ -309,7 +326,6 @@ defmodule PackheavyWeb.PublicTripLive do
                 id="public-route-map"
                 phx-hook="RouteMap"
                 phx-update="ignore"
-                data-legs={@legs_payload_json}
                 class="w-full h-[500px] lg:h-[640px] rounded order-first"
               >
               </div>
@@ -381,7 +397,6 @@ defmodule PackheavyWeb.PublicTripLive do
                         phx-update="ignore"
                         data-leg-id={leg.id}
                         data-color={leg.color}
-                        data-track={Jason.encode!(Packheavy.Trips.Helpers.slim_track_for_chart(leg.track))}
                       >
                         {Phoenix.HTML.raw(leg_elevation_svg(leg))}
                       </div>

@@ -1,15 +1,24 @@
-// SVG elevation profile crosshair. Reads the canonical track from
-// data-track and overlays a vertical line + dot + label at the point
-// nearest the cursor (chart-side) or at the index broadcast by the
-// map polyline (`gpx:hover` event).
+// SVG elevation profile crosshair. The track data arrives via the
+// `chart:tracks` push_event from the LiveView (so it stays out of
+// the initial render diff); each chart hook listens for the same
+// event and picks its own leg's track by id.
 
 const SVG_W = 800
 const SVG_H = 200
 
 export default {
   mounted() {
-    const track = JSON.parse(this.el.dataset.track)
-    const legId = this.el.dataset.legId
+    this._initialised = false
+
+    this.handleEvent("chart:tracks", ({ tracks }) => {
+      const legId = this.el.dataset.legId
+      const track = tracks && tracks[legId]
+      if (!this._initialised && track) this._init(track, legId)
+    })
+  },
+  _init(track, legId) {
+    this._initialised = true
+
     const eles = track.map((p) => p.ele).filter((e) => e !== null && e !== undefined)
     if (!eles.length || track.length < 2) return
 
