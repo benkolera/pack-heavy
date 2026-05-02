@@ -1563,10 +1563,10 @@ defmodule PackheavyWeb.TripLive.Show do
                     type="button"
                     phx-click="fly-to-leg"
                     phx-value-id={leg.id}
-                    class="btn btn-ghost btn-xs"
-                    title="Fly the map to this leg"
+                    class="btn btn-ghost btn-xs gap-1"
+                    title="Show this leg on the map"
                   >
-                    Fly
+                    <.icon name="hero-map-mini" class="size-3" /> Map
                   </button>
                   <button
                     type="button"

@@ -363,10 +363,10 @@ defmodule PackheavyWeb.PublicTripLive do
                         type="button"
                         phx-click="fly-to-leg"
                         phx-value-id={leg.id}
-                        class="btn btn-ghost btn-xs shrink-0"
-                        title="Fly the map to this leg"
+                        class="btn btn-ghost btn-xs gap-1 shrink-0"
+                        title="Show this leg on the map"
                       >
-                        Fly
+                        <.icon name="hero-map-mini" class="size-3" /> Map
                       </button>
                     </div>
                     <%= if leg_has_elevation?(leg) do %>
