@@ -495,9 +495,9 @@ defmodule PackheavyWeb.HandoutLive do
                 <ul class="divide-y divide-base-300">
                   <li
                     :for={ti <- Map.get(@grouped, cat, [])}
-                    class="grid grid-cols-[1fr_3rem_4.5rem_5rem_3.5rem_5.5rem] items-center gap-2 py-2 px-1 text-sm"
+                    class="flex flex-wrap sm:grid sm:grid-cols-[1fr_3rem_4.5rem_5rem_3.5rem_5.5rem] items-center gap-x-2 gap-y-1 py-2 px-1 text-sm"
                   >
-                    <span class="min-w-0 truncate">
+                    <span class="basis-full sm:basis-auto min-w-0 sm:truncate">
                       <span
                         :if={ti.item.brand}
                         class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom"

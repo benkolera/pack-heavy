@@ -1053,9 +1053,9 @@ defmodule PackheavyWeb.TripLive.Show do
           <ul class="divide-y divide-base-300">
             <li
               :for={ti <- Map.get(@grouped, cat, [])}
-              class="flex items-center py-2 px-0.5 sm:px-1 gap-1 sm:gap-2"
+              class="flex flex-wrap sm:flex-nowrap items-center py-2 px-0.5 sm:px-1 gap-x-2 gap-y-1"
             >
-              <span class="flex-1 min-w-0 truncate text-sm">
+              <span class="basis-full sm:basis-auto sm:flex-1 min-w-0 sm:truncate text-sm">
                 <span
                   :if={ti.item.brand}
                   class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom"
@@ -1280,9 +1280,9 @@ defmodule PackheavyWeb.TripLive.Show do
           <ul class="divide-y divide-base-300">
             <li
               :for={ti <- Map.get(@grouped, cat, [])}
-              class="flex items-center py-2 px-0.5 sm:px-1 gap-1 sm:gap-2"
+              class="flex flex-wrap sm:flex-nowrap items-center py-2 px-0.5 sm:px-1 gap-x-2 gap-y-1"
             >
-              <span class="flex-1 min-w-0 truncate text-sm">
+              <span class="basis-full sm:basis-auto sm:flex-1 min-w-0 sm:truncate text-sm">
                 <span
                   :if={ti.item.brand}
                   class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom"
