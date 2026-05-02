@@ -104,8 +104,11 @@ config :logger, :default_formatter,
 config :phoenix, :json_library, Jason
 
 # Tzdata is the time-zone database used by Astro for sunrise/sunset
-# calculations and any DateTime.shift_zone calls.
+# calculations and any DateTime.shift_zone calls. Disable Tzdata's
+# auto-updater (it wants Hackney as an HTTP client we don't otherwise
+# need); the bundled DB ships fresh enough on every deploy.
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
+config :tzdata, :autoupdate, :disabled
 
 # Register `.gpx` so Phoenix LiveView's `allow_upload(accept: ~w(.gpx))`
 # resolves it via the MIME registry. The standard registered MIME for
