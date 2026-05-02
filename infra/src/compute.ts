@@ -232,7 +232,12 @@ export function buildCompute(args: Args): ComputeResult {
                         containerPort: 4000,
                     },
                 ],
-                deploymentMinimumHealthyPercent: 0,
+                // Rolling deploy: start the new task first and wait
+                // for it to register healthy with the target group
+                // before draining the old one. Without this (min: 0)
+                // ECS stops the old task before starting the new one
+                // and the ALB returns 503s for ~30 s during a deploy.
+                deploymentMinimumHealthyPercent: 100,
                 deploymentMaximumPercent: 200,
                 // Block `pulumi up` until ECS reports steady state
                 // (running tasks == desired, no in-flight deploy).
