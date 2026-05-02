@@ -1907,19 +1907,22 @@ defmodule PackheavyWeb.TripLive.Show do
     if dh > 0, do: (e2 - e1) / dh * 100, else: 0.0
   end
 
-  # Colour buckets — soft fills so the polyline still reads on top.
-  # Inclines (positive %) bracketed tighter than declines because they
-  # cost more energy. Steep descents still get coloured, just at a
-  # higher threshold.
+  # Colour buckets, matching Komoot's scheme. Uphill bands kick in
+  # earlier than downhill bands because climbing costs more energy
+  # than descending — a 5 % uphill is a noticeable grunt while a
+  # 5 % downhill barely registers.
+  #
+  # Uphill   |    0–5 % green | 5–15 % yellow | 15–20 % orange-red | 20 %+ dark red
+  # Downhill | 0 to -10 green | -10 to -15 y  | -15 to -20 or-red  | -20 %+ dark red
   defp incline_color(slope) do
     cond do
-      slope >= 12.0 -> "rgba(239,68,68,0.55)"
-      slope >= 6.0 -> "rgba(249,115,22,0.5)"
-      slope >= 3.0 -> "rgba(250,204,21,0.45)"
-      slope <= -18.0 -> "rgba(239,68,68,0.55)"
-      slope <= -10.0 -> "rgba(249,115,22,0.5)"
-      slope <= -5.0 -> "rgba(250,204,21,0.45)"
-      true -> "rgba(74,222,128,0.35)"
+      slope >= 20.0 -> "rgba(153,27,27,0.55)"
+      slope >= 15.0 -> "rgba(234,88,12,0.5)"
+      slope >= 5.0 -> "rgba(250,204,21,0.45)"
+      slope <= -20.0 -> "rgba(153,27,27,0.55)"
+      slope <= -15.0 -> "rgba(234,88,12,0.5)"
+      slope <= -10.0 -> "rgba(250,204,21,0.45)"
+      true -> "rgba(74,222,128,0.4)"
     end
   end
 
