@@ -165,13 +165,14 @@ defmodule PackheavyWeb.HandoutLive do
         <% totals = report.totals || %{} %>
         <% calories = Map.get(totals, :calories, 0) %>
         <% food_g = Map.get(totals, :food_weight_g, 0) %>
-        <% burned = Map.get(totals, :calories_burned) %>
+        <% active = Map.get(totals, :calories_burned_active) %>
+        <% resting = Map.get(totals, :calories_burned_resting) %>
         <% time_h = Map.get(totals, :time_h) %>
         <% loads = Map.get(totals, :loads) || Packheavy.Trips.Helpers.pack_loads(@trip) %>
         <% total_distance_m = @legs_with_color |> Enum.map(& &1.distance_m) |> Enum.sum() %>
         <% total_gain_m = @legs_with_color |> Enum.map(& &1.elevation_gain_m) |> Enum.sum() %>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
           <div :if={@has_legs?} class="card bg-base-200 p-3">
             <div class="text-xs opacity-70">Distance</div>
             <div class="text-lg font-semibold tabular-nums">
@@ -197,9 +198,15 @@ defmodule PackheavyWeb.HandoutLive do
             <div class="text-xs opacity-70">Calories carried</div>
             <div class="text-lg font-semibold tabular-nums">{calories} kcal</div>
           </div>
-          <div :if={burned} class="card bg-base-200 p-3">
-            <div class="text-xs opacity-70">Calories burned</div>
-            <div class="text-lg font-semibold tabular-nums">{burned} kcal</div>
+          <div :if={active} class="card bg-base-200 p-3">
+            <div class="text-xs opacity-70">Burn (active)</div>
+            <div class="text-lg font-semibold tabular-nums">{active} kcal</div>
+            <div class="text-xs opacity-50">while walking</div>
+          </div>
+          <div :if={resting} class="card bg-base-200 p-3">
+            <div class="text-xs opacity-70">Burn (resting)</div>
+            <div class="text-lg font-semibold tabular-nums">{resting} kcal</div>
+            <div class="text-xs opacity-50">camp/sleep BMR</div>
           </div>
         </div>
 

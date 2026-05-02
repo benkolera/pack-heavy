@@ -150,10 +150,20 @@ defmodule Packheavy.Trips.Calculations.ValidationReport do
 
     leader = Packheavy.Trips.Helpers.leader_weight_kg(trip)
     loads = Packheavy.Trips.Helpers.pack_loads(trip)
+    active = Packheavy.Trips.Helpers.trip_calories(trip, leader, loads)
+    resting = Packheavy.Trips.Helpers.trip_resting_calories(trip, leader)
+
+    total =
+      case {active, resting} do
+        {a, r} when is_number(a) and is_number(r) -> a + r
+        _ -> nil
+      end
 
     totals =
       totals
-      |> Map.put(:calories_burned, Packheavy.Trips.Helpers.trip_calories(trip, leader, loads))
+      |> Map.put(:calories_burned_active, active)
+      |> Map.put(:calories_burned_resting, resting)
+      |> Map.put(:calories_burned_total, total)
       |> Map.put(:time_h, Packheavy.Trips.Helpers.trip_time_h(trip))
       |> Map.put(:loads, loads)
 
@@ -169,7 +179,9 @@ defmodule Packheavy.Trips.Calculations.ValidationReport do
       food_weight_g: 0,
       water_weight_g: 0,
       calories: 0,
-      calories_burned: nil,
+      calories_burned_active: nil,
+      calories_burned_resting: nil,
+      calories_burned_total: nil,
       time_h: nil,
       water_ml: 0,
       pack_volume_l: 0,

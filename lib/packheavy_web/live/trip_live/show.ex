@@ -903,20 +903,15 @@ defmodule PackheavyWeb.TripLive.Show do
 
       <div class="space-y-1">
         <h3 class="text-xs font-semibold opacity-70 uppercase tracking-wide">Resources</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <% burned = Map.get(totals, :calories_burned) %>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <% active = Map.get(totals, :calories_burned_active) %>
+          <% resting = Map.get(totals, :calories_burned_resting) %>
+          <% total = Map.get(totals, :calories_burned_total) %>
           <div class="summary-card card bg-base-200 p-3">
             <div class="text-xs opacity-70">Calories carried</div>
             <div class="text-lg font-semibold tabular-nums">{calories} kcal</div>
-            <div :if={days} class="text-xs opacity-50">
-              ~{div(calories, max(days, 1))} kcal/day
-            </div>
-          </div>
-          <div class="summary-card card bg-base-200 p-3">
-            <div class="text-xs opacity-70">Calories burned (est.)</div>
-            <%= if burned do %>
-              <div class="text-lg font-semibold tabular-nums">{burned} kcal</div>
-              <% diff = calories - burned %>
+            <%= if total do %>
+              <% diff = calories - total %>
               <div class="text-xs opacity-50">
                 <%= if diff >= 0 do %>
                   +{diff} kcal surplus
@@ -925,7 +920,27 @@ defmodule PackheavyWeb.TripLive.Show do
                 <% end %>
               </div>
             <% else %>
+              <div :if={days} class="text-xs opacity-50">
+                ~{div(calories, max(days, 1))} kcal/day
+              </div>
+            <% end %>
+          </div>
+          <div class="summary-card card bg-base-200 p-3">
+            <div class="text-xs opacity-70">Burn (active)</div>
+            <%= if active do %>
+              <div class="text-lg font-semibold tabular-nums">{active} kcal</div>
+              <div class="text-xs opacity-50">while walking</div>
+            <% else %>
               <div class="text-base opacity-50 italic">needs legs + leader weight</div>
+            <% end %>
+          </div>
+          <div class="summary-card card bg-base-200 p-3">
+            <div class="text-xs opacity-70">Burn (resting)</div>
+            <%= if resting do %>
+              <div class="text-lg font-semibold tabular-nums">{resting} kcal</div>
+              <div class="text-xs opacity-50">camp/sleep BMR</div>
+            <% else %>
+              <div class="text-base opacity-50 italic">needs dates + leader weight</div>
             <% end %>
           </div>
           <div class="summary-card card bg-base-200 p-3">
@@ -1243,7 +1258,8 @@ defmodule PackheavyWeb.TripLive.Show do
     loads = Packheavy.Trips.Helpers.pack_loads(assigns.trip)
 
     total_time_h = Packheavy.Trips.Helpers.trip_time_h(assigns.trip)
-    total_calories = Packheavy.Trips.Helpers.trip_calories(assigns.trip, leader_kg, loads)
+    active_calories = Packheavy.Trips.Helpers.trip_calories(assigns.trip, leader_kg, loads)
+    resting_calories = Packheavy.Trips.Helpers.trip_resting_calories(assigns.trip, leader_kg)
 
     legs_by_day_map =
       legs_with_color
@@ -1280,11 +1296,12 @@ defmodule PackheavyWeb.TripLive.Show do
       |> assign(:leader_kg, leader_kg)
       |> assign(:loads, loads)
       |> assign(:total_time_h, total_time_h)
-      |> assign(:total_calories, total_calories)
+      |> assign(:active_calories, active_calories)
+      |> assign(:resting_calories, resting_calories)
 
     ~H"""
     <div class="space-y-4 mt-4">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <div class="card bg-base-200 p-4">
           <div class="text-sm opacity-70">Total distance</div>
           <div class="text-3xl font-bold">
@@ -1304,13 +1321,24 @@ defmodule PackheavyWeb.TripLive.Show do
           <div class="text-xs opacity-60">Adjust pace per leg below.</div>
         </div>
         <div class="card bg-base-200 p-4">
-          <div class="text-sm opacity-70">Calories burned (est.)</div>
+          <div class="text-sm opacity-70">Burn (active)</div>
           <div class="text-3xl font-bold">
-            <%= if @total_calories, do: "#{@total_calories} kcal", else: "—" %>
+            <%= if @active_calories, do: "#{@active_calories} kcal", else: "—" %>
           </div>
-          <div :if={!@total_calories} class="text-xs opacity-60">
+          <div :if={!@active_calories} class="text-xs opacity-60">
             Needs leader weight + items to estimate.
           </div>
+          <div :if={@active_calories} class="text-xs opacity-60">while walking</div>
+        </div>
+        <div class="card bg-base-200 p-4">
+          <div class="text-sm opacity-70">Burn (resting)</div>
+          <div class="text-3xl font-bold">
+            <%= if @resting_calories, do: "#{@resting_calories} kcal", else: "—" %>
+          </div>
+          <div :if={!@resting_calories} class="text-xs opacity-60">
+            Needs trip dates + leader weight.
+          </div>
+          <div :if={@resting_calories} class="text-xs opacity-60">camp/sleep BMR</div>
         </div>
       </div>
 

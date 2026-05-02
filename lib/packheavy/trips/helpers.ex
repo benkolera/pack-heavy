@@ -169,6 +169,42 @@ defmodule Packheavy.Trips.Helpers do
 
   def trip_calories(_, _, _), do: nil
 
+  # Resting/basal energy expenditure rate. Standard adult BMR is
+  # ~24 kcal/kg/day = 1 kcal/kg/h. Rough but the right order of
+  # magnitude — what matters for food planning is total daily intake.
+  @bmr_kcal_per_kg_h 1.0
+
+  @doc """
+  Whole-trip duration in hours, derived from start_date/end_date
+  (inclusive — May 5 → May 11 is 7 days = 168 h). Returns nil if
+  either date is missing.
+  """
+  def trip_duration_h(%{start_date: %Date{} = s, end_date: %Date{} = e}) do
+    days = Date.diff(e, s) + 1
+    if days > 0, do: days * 24.0, else: nil
+  end
+
+  def trip_duration_h(_), do: nil
+
+  @doc """
+  Resting calorie burn for the non-walking portion of the trip
+  (sleep, camp, eating). Uses BMR × leader weight × (trip_h - walking_h).
+  Returns nil if leader weight or trip duration is missing.
+  """
+  def trip_resting_calories(_, nil), do: nil
+
+  def trip_resting_calories(trip, leader_kg) do
+    case trip_duration_h(trip) do
+      dur when is_number(dur) ->
+        walk = trip_time_h(trip) || 0.0
+        rest_h = max(dur - walk, 0.0)
+        round(decimal_to_float(leader_kg) * @bmr_kcal_per_kg_h * rest_h)
+
+      _ ->
+        nil
+    end
+  end
+
   @doc """
   Pack loads in kg based on per-item `carry_mode`. Returns
   `%{full_kg, sidequest_kg, by_carry: %{worn, day_pack, main_pack}}`.
