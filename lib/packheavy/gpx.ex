@@ -10,10 +10,6 @@ defmodule Packheavy.Gpx do
   """
 
   @earth_radius_m 6_371_000.0
-  # Ignore upward jumps under this many metres — typical GPS noise on
-  # consumer devices sits at ±2–3 m. A slightly conservative 3 m keeps
-  # the gain figure close to what Komoot/Strava report.
-  @elevation_noise_floor_m 3.0
 
   @type point :: %{lat: float(), lon: float(), ele: float() | nil}
   @type stats :: %{distance_m: float(), elevation_gain_m: float(), point_count: non_neg_integer()}
@@ -104,9 +100,9 @@ defmodule Packheavy.Gpx do
   defp deg2rad(deg), do: :math.pi() * deg / 180.0
 
   @doc """
-  Cumulative positive elevation change. Drops nils and ignores rises
-  below the noise floor so consumer-GPS jitter doesn't inflate the
-  number.
+  Cumulative positive elevation change. Komoot/Strava exports are
+  already DEM-smoothed, so we just sum positive deltas — extra
+  smoothing here would silently under-report against their UI numbers.
   """
   @spec elevation_gain_m([point()]) :: float()
   def elevation_gain_m(points) do
@@ -116,7 +112,7 @@ defmodule Packheavy.Gpx do
     |> Enum.chunk_every(2, 1, :discard)
     |> Enum.reduce(0.0, fn [a, b], acc ->
       diff = b - a
-      if diff > @elevation_noise_floor_m, do: acc + diff, else: acc
+      if diff > 0, do: acc + diff, else: acc
     end)
   end
 end
