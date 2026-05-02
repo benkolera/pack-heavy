@@ -106,6 +106,11 @@ defmodule PackheavyWeb.PublicTripLive do
   end
 
   @impl true
+  def handle_event("fly-to-leg", %{"id" => id}, socket) do
+    {:noreply, push_event(socket, "gpx:fly", %{leg_id: id})}
+  end
+
+  @impl true
   def render(%{trip: nil} = assigns) do
     ~H"""
     <main class="min-h-screen p-8 flex items-center justify-center">
@@ -203,6 +208,9 @@ defmodule PackheavyWeb.PublicTripLive do
 
     has_legs? = legs_with_color != []
 
+    leader_kg = Packheavy.Trips.Helpers.leader_weight_kg(assigns.trip)
+    loads = Packheavy.Trips.Helpers.pack_loads(assigns.trip)
+
     assigns =
       assigns
       |> assign(grouped: grouped)
@@ -214,6 +222,8 @@ defmodule PackheavyWeb.PublicTripLive do
       |> assign(legs_by_day: legs_by_day)
       |> assign(legs_payload_json: legs_payload_json)
       |> assign(has_legs?: has_legs?)
+      |> assign(leader_kg: leader_kg)
+      |> assign(loads: loads)
 
     ~H"""
     <main class="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
@@ -234,10 +244,9 @@ defmodule PackheavyWeb.PublicTripLive do
         <% active = Map.get(totals, :calories_burned_active) %>
         <% resting = Map.get(totals, :calories_burned_resting) %>
         <% time_h = Map.get(totals, :time_h) %>
-        <% loads = Map.get(totals, :loads) || Packheavy.Trips.Helpers.pack_loads(@trip) %>
         <% total_distance_m = @legs_with_color |> Enum.map(& &1.distance_m) |> Enum.sum() %>
         <% total_gain_m = @legs_with_color |> Enum.map(& &1.elevation_gain_m) |> Enum.sum() %>
-        <% pack_kg = (loads.full_kg) %>
+        <% pack_kg = @loads.full_kg %>
 
         <!-- Top-of-page summary: route stats + gear stats side-by-side. -->
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
@@ -258,8 +267,8 @@ defmodule PackheavyWeb.PublicTripLive do
           <div class="card bg-base-200 p-3">
             <div class="text-xs opacity-70">Pack weight</div>
             <div class="text-lg font-semibold tabular-nums">{:erlang.float_to_binary(pack_kg, decimals: 2)} kg</div>
-            <div :if={loads.sidequest_kg > 0} class="text-xs opacity-50 tabular-nums" title="Worn + day-pack only">
-              sidequest: {:erlang.float_to_binary(loads.sidequest_kg, decimals: 2)} kg
+            <div :if={@loads.sidequest_kg > 0} class="text-xs opacity-50 tabular-nums" title="Worn + day-pack only">
+              sidequest: {:erlang.float_to_binary(@loads.sidequest_kg, decimals: 2)} kg
             </div>
           </div>
           <div class="card bg-base-200 p-3">
@@ -312,9 +321,18 @@ defmodule PackheavyWeb.PublicTripLive do
                           <span :if={leg.sidequest} class="badge badge-xs badge-info ml-1 align-middle">sidequest</span>
                         </div>
                         <div class="text-xs opacity-70 tabular-nums mt-0.5">
-                          {:erlang.float_to_binary(leg.distance_m / 1000, decimals: 2)} km · +{round(leg.elevation_gain_m)} m · {Packheavy.Trips.Helpers.format_hours(Packheavy.Trips.Helpers.leg_time_h(leg))}
+                          {:erlang.float_to_binary(leg.distance_m / 1000, decimals: 2)} km · +{round(leg.elevation_gain_m)} m · {Packheavy.Trips.Helpers.format_hours(Packheavy.Trips.Helpers.leg_time_h(leg))}<%= if leg_calories = Packheavy.Trips.Helpers.leg_calories(leg, @leader_kg, @loads) do %> · {leg_calories} kcal<% end %>
                         </div>
                       </div>
+                      <button
+                        type="button"
+                        phx-click="fly-to-leg"
+                        phx-value-id={leg.id}
+                        class="btn btn-ghost btn-xs shrink-0"
+                        title="Fly the map to this leg"
+                      >
+                        Fly
+                      </button>
                     </div>
                     <%= if leg_has_elevation?(leg) do %>
                       <div
