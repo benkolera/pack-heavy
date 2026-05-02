@@ -376,8 +376,8 @@ defmodule PackheavyWeb.TripDetailsLive do
           <div :if={@trip.route_url}><dt class="opacity-60 inline">Route: </dt><dd class="inline"><.link href={@trip.route_url} class="link" target="_blank">{@trip.route_url}</.link></dd></div>
           <div :if={@trip.departure_at}><dt class="opacity-60 inline">Depart: </dt><dd class="inline">{format_datetime(@trip.departure_at)}</dd></div>
           <div :if={@trip.return_at}><dt class="opacity-60 inline">Return: </dt><dd class="inline">{format_datetime(@trip.return_at)}</dd></div>
-          <div :if={@trip.escalation_criteria} class="sm:col-span-2"><dt class="opacity-60">Escalation criteria:</dt><dd class="whitespace-pre-line">{@trip.escalation_criteria}</dd></div>
-          <div :if={@trip.gear_highlights} class="sm:col-span-2"><dt class="opacity-60">Gear highlights:</dt><dd class="whitespace-pre-line">{@trip.gear_highlights}</dd></div>
+          <div :if={@trip.escalation_criteria} class="sm:col-span-2"><dt class="opacity-60">Escalation criteria:</dt><dd class="markdown text-sm">{PackheavyWeb.Markdown.render(@trip.escalation_criteria)}</dd></div>
+          <div :if={@trip.gear_highlights} class="sm:col-span-2"><dt class="opacity-60">Gear highlights:</dt><dd class="markdown text-sm">{PackheavyWeb.Markdown.render(@trip.gear_highlights)}</dd></div>
           <div :if={@trip.notes && @trip.notes != ""} class="sm:col-span-2">
             <dt class="opacity-60">Notes:</dt>
             <dd class="markdown text-sm">{PackheavyWeb.Markdown.render(@trip.notes)}</dd>
