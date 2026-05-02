@@ -103,6 +103,11 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Register `.gpx` so Phoenix LiveView's `allow_upload(accept: ~w(.gpx))`
+# resolves it via the MIME registry. The standard registered MIME for
+# GPX is `application/gpx+xml`.
+config :mime, :types, %{"application/gpx+xml" => ["gpx"]}
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

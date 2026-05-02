@@ -24,12 +24,14 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/packheavy"
 import topbar from "../vendor/topbar"
+import RouteMap from "./hooks/route_map"
+import LegChart from "./hooks/leg_chart"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: {...colocatedHooks, RouteMap, LegChart},
 })
 
 // Show progress bar on live navigation and form submits

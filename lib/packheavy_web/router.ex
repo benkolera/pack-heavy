@@ -52,8 +52,12 @@ defmodule PackheavyWeb.Router do
       live "/kits/:id", KitLive.Show, :show
       live "/trips", TripLive.Index, :index
       live "/trips/new", TripLive.Index, :new
-      live "/trips/:id", TripLive.Show, :show
+      live "/trips/:id", TripDetailsLive, :show
+      live "/trips/:id/pack", TripLive.Show, :show
+      live "/trips/:id/handout", HandoutLive, :show
       live "/backup", BackupLive, :index
+      live "/gpx", GpxLive, :index
+      live "/profile", ProfileLive, :index
     end
 
     # Backup export needs the regular controller pipeline (not LV) so

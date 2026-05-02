@@ -97,11 +97,35 @@ defmodule Packheavy.Accounts.User do
         Ash.Changeset.change_attribute(changeset, :email, user_info["email"])
       end
     end
+
+    update :update_profile do
+      description "Update the current user's profile fields"
+
+      accept [
+        :name,
+        :phone,
+        :satellite_sms,
+        :location_tracker_url,
+        :location_tracker_password,
+        :default_hiker_weight_kg,
+        :default_hiker_notes
+      ]
+    end
   end
 
   policies do
     bypass AshAuthentication.Checks.AshAuthenticationInteraction do
       authorize_if always()
+    end
+
+    # Reads of self (e.g. profile page reload) and the profile update
+    # action both require the actor to be the same user.
+    policy action_type(:read) do
+      authorize_if expr(id == ^actor(:id))
+    end
+
+    policy action(:update_profile) do
+      authorize_if expr(id == ^actor(:id))
     end
   end
 
@@ -119,6 +143,22 @@ defmodule Packheavy.Accounts.User do
       allow_nil? true
       sensitive? true
     end
+
+    # Profile fields. These provide the defaults that get copied into
+    # the leader TripHiker record at trip-create time. Editing them
+    # later doesn't retroactively rewrite past trips' hikers.
+    attribute :name, :string, public?: true
+    attribute :phone, :string, public?: true
+    attribute :satellite_sms, :string, public?: true
+    attribute :location_tracker_url, :string, public?: true
+
+    attribute :location_tracker_password, :string do
+      public? true
+      sensitive? true
+    end
+
+    attribute :default_hiker_weight_kg, :decimal, public?: true
+    attribute :default_hiker_notes, :string, public?: true
   end
 
   identities do

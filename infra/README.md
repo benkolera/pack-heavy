@@ -181,7 +181,7 @@ Order of operations (chicken-and-egg with Google OAuth's redirect URI):
      step 6).
 4. **Set the six secrets**:
    ```sh
-   pulumi config set --secret packheavy:allowedEmails         "ben.kolera@gmail.com,bobbydoulton@gmail.com"
+   pulumi config set --secret packheavy:allowedEmails         "ben.kolera@gmail.com,bobby.doulton@gmail.com"
    pulumi config set --secret packheavy:googleClientId        <from google console>
    pulumi config set --secret packheavy:googleClientSecret    <from google console>
    pulumi config set --secret packheavy:auth0Domain           <tenant>.<region>.auth0.com

@@ -36,9 +36,15 @@ defmodule PackheavyWeb.TripLive.Index do
   end
 
   def handle_event("save", %{"form" => params}, socket) do
+    user = socket.assigns.current_user
+
     case AshPhoenix.Form.submit(socket.assigns.form, params: params) do
-      {:ok, trip} -> {:noreply, push_navigate(socket, to: ~p"/trips/#{trip.id}")}
-      {:error, form} -> {:noreply, assign(socket, :form, form)}
+      {:ok, trip} ->
+        seed_leader_hiker!(trip, user)
+        {:noreply, push_navigate(socket, to: ~p"/trips/#{trip.id}")}
+
+      {:error, form} ->
+        {:noreply, assign(socket, :form, form)}
     end
   end
 
@@ -47,6 +53,42 @@ defmodule PackheavyWeb.TripLive.Index do
     Ash.destroy!(trip, actor: socket.assigns.current_user)
     {:noreply, socket |> put_flash(:info, "Deleted.") |> reload()}
   end
+
+  # Auto-create the leader TripHiker from the user's profile defaults
+  # so the new trip arrives ready-to-edit without forcing them through
+  # a separate Add Hiker step. Idempotent — skips if a hiker already
+  # exists (the migration backfilled existing trips, but the typical
+  # path is a fresh trip with no hikers yet).
+  defp seed_leader_hiker!(trip, user) do
+    require Ash.Query
+
+    existing? =
+      Packheavy.Trips.TripHiker
+      |> Ash.Query.filter(trip_id == ^trip.id)
+      |> Ash.exists?(actor: user)
+
+    unless existing? do
+      Trips.create_trip_hiker!(
+        %{
+          trip_id: trip.id,
+          user_id: user.id,
+          name: hiker_name(user),
+          role: :leader,
+          phone: user.phone,
+          satellite_sms: user.satellite_sms,
+          location_tracker_url: user.location_tracker_url,
+          location_tracker_password: user.location_tracker_password,
+          weight_kg: user.default_hiker_weight_kg,
+          notes: user.default_hiker_notes,
+          position: 0
+        },
+        actor: user
+      )
+    end
+  end
+
+  defp hiker_name(%{name: name}) when is_binary(name) and name != "", do: name
+  defp hiker_name(%{email: email}), do: to_string(email)
 
   defp state_badge_class(:draft), do: "badge"
   defp state_badge_class(:packing), do: "badge badge-warning"
@@ -75,6 +117,11 @@ defmodule PackheavyWeb.TripLive.Index do
                 <input type="date" name="form[end_date]" value={@form[:end_date].value} class="input input-bordered" />
               </label>
             </div>
+            <p class="text-xs opacity-60">
+              Hike details (area, links, escalation criteria) live on the
+              Details tab. Distance and elevation come from GPX legs you
+              upload on the Route tab.
+            </p>
             <div class="flex gap-2 justify-end">
               <.link patch={~p"/trips"} class="btn btn-ghost">Cancel</.link>
               <button class="btn btn-primary">Create</button>

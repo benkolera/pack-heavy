@@ -30,14 +30,14 @@ defmodule Packheavy.Trips.TripItem do
 
     create :create do
       primary? true
-      accept [:trip_id, :item_id, :qty, :source, :source_kit_id]
+      accept [:trip_id, :item_id, :qty, :source, :source_kit_id, :carry_mode]
       change Packheavy.Trips.Changes.EnforceItemQtyAvailable
     end
 
     update :update do
       primary? true
       require_atomic? false
-      accept [:qty, :packed, :charged]
+      accept [:qty, :packed, :charged, :tested, :carry_mode]
       change Packheavy.Trips.Changes.EnforceItemQtyAvailable
     end
 
@@ -49,6 +49,16 @@ defmodule Packheavy.Trips.TripItem do
     update :set_charged do
       argument :charged, :boolean, allow_nil?: false
       change set_attribute(:charged, arg(:charged))
+    end
+
+    update :set_tested do
+      argument :tested, :boolean, allow_nil?: false
+      change set_attribute(:tested, arg(:tested))
+    end
+
+    update :set_carry_mode do
+      argument :carry_mode, :atom, allow_nil?: false, constraints: [one_of: [:worn, :day_pack, :main_pack]]
+      change set_attribute(:carry_mode, arg(:carry_mode))
     end
   end
 
@@ -66,6 +76,22 @@ defmodule Packheavy.Trips.TripItem do
     attribute :source_kit_id, :uuid, public?: true
     attribute :packed, :boolean, allow_nil?: false, default: false, public?: true
     attribute :charged, :boolean, allow_nil?: false, default: false, public?: true
+
+    # User-confirmed it still works (powered on, fits, no leaks, etc.).
+    # Independent from `:packed` and `:charged` because functioning ≠
+    # charged ≠ in the bag. Surfaced as a tick on the Pack tab.
+    attribute :tested, :boolean, allow_nil?: false, default: false, public?: true
+
+    # Where on your person this item rides during the hike. Drives
+    # whether it counts toward sidequest carry weight (worn + day_pack
+    # only) or full-trip carry weight (everything).
+    attribute :carry_mode, :atom do
+      allow_nil? false
+      default :main_pack
+      public? true
+      constraints one_of: [:worn, :day_pack, :main_pack]
+    end
+
     timestamps()
   end
 

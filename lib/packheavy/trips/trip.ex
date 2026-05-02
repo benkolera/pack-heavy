@@ -41,12 +41,30 @@ defmodule Packheavy.Trips.Trip do
     end
   end
 
+  @editable_attrs [
+    :name,
+    :start_date,
+    :end_date,
+    :area,
+    :park_url,
+    :route_url,
+    :departure_at,
+    :return_at,
+    :escalation_criteria,
+    :gear_highlights,
+    :notes
+  ]
+
   actions do
-    defaults [:read, :destroy, update: [:name, :start_date, :end_date]]
+    defaults [
+      :read,
+      :destroy,
+      update: @editable_attrs
+    ]
 
     create :create do
       primary? true
-      accept [:name, :start_date, :end_date]
+      accept @editable_attrs
       change relate_actor(:user)
     end
 
@@ -191,6 +209,22 @@ defmodule Packheavy.Trips.Trip do
     attribute :name, :string, allow_nil?: false, public?: true
     attribute :start_date, :date, public?: true
     attribute :end_date, :date, public?: true
+
+    # Hike-overview fields populated on the trip details page. All
+    # nullable; the handout view tolerates missing values.
+    attribute :area, :string, public?: true
+    attribute :park_url, :string, public?: true
+    attribute :route_url, :string, public?: true
+    attribute :departure_at, :utc_datetime, public?: true
+    attribute :return_at, :utc_datetime, public?: true
+    attribute :escalation_criteria, :string, public?: true
+    attribute :gear_highlights, :string, public?: true
+
+    # Free-form Markdown notes (flights, accom, shuttles, links, etc).
+    # Rendered with Earmark on the Details + Handout pages; never
+    # surfaced on the public share view.
+    attribute :notes, :string, public?: true
+
     # Opaque random token for the public read-only share URL. Nullable
     # — a trip is only shareable while the owner has explicitly enabled
     # it. Postgres treats each NULL as distinct, so the unique index
@@ -207,6 +241,12 @@ defmodule Packheavy.Trips.Trip do
     belongs_to :user, Packheavy.Accounts.User, allow_nil?: false
     has_many :trip_items, Packheavy.Trips.TripItem
     has_many :trip_kits, Packheavy.Trips.TripKit
+    has_many :trip_hikers, Packheavy.Trips.TripHiker
+    has_many :trip_contacts, Packheavy.Trips.TripContact
+
+    has_many :trip_legs, Packheavy.Trips.TripLeg do
+      sort position: :asc
+    end
   end
 
   calculations do

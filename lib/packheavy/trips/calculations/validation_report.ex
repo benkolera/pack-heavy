@@ -24,8 +24,11 @@ defmodule Packheavy.Trips.Calculations.ValidationReport do
         :qty,
         :packed,
         :charged,
+        :carry_mode,
         item: [:id, :title, :weight_g, :category_data]
-      ]
+      ],
+      trip_hikers: [:role, :weight_kg],
+      trip_legs: [:distance_m, :elevation_gain_m, :pace_kmh, :sidequest, :day]
     ]
   end
 
@@ -145,6 +148,15 @@ defmodule Packheavy.Trips.Calculations.ValidationReport do
         end
       end)
 
+    leader = Packheavy.Trips.Helpers.leader_weight_kg(trip)
+    loads = Packheavy.Trips.Helpers.pack_loads(trip)
+
+    totals =
+      totals
+      |> Map.put(:calories_burned, Packheavy.Trips.Helpers.trip_calories(trip, leader, loads))
+      |> Map.put(:time_h, Packheavy.Trips.Helpers.trip_time_h(trip))
+      |> Map.put(:loads, loads)
+
     %{totals: totals, errors: Enum.reverse(errors), warnings: Enum.reverse(warnings)}
   end
 
@@ -157,6 +169,8 @@ defmodule Packheavy.Trips.Calculations.ValidationReport do
       food_weight_g: 0,
       water_weight_g: 0,
       calories: 0,
+      calories_burned: nil,
+      time_h: nil,
       water_ml: 0,
       pack_volume_l: 0,
       power_mah: 0,

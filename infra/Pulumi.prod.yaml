@@ -3,7 +3,7 @@ config:
   packheavy:domain: benkolera.com
   packheavy:subdomain: packheavy
   packheavy:hostedZoneId: Z3C8FISDEC6QOG
-  packheavy:imageTag: aa369b8
+  packheavy:imageTag: 44eb33c
   packheavy:running: "true"
   packheavy:enableAuth0: "true"
   # When enableAuth0 is flipped to "true", set the following first
@@ -40,6 +40,6 @@ config:
   packheavy:auth0MgmtClientSecret:
     secure: v1:3XA1Oyv/D1Xhz96L:r59W1D8vlR9g4HKymDrBoqUNJO/UN5pMwLHafBGF8qpqbLQuKSDFMty87Flacrz1Ibq9BH7sTQxvCNLXwrUpdg70DjLCENUvobE+qRYOep8=
   packheavy:allowedEmails:
-    secure: v1:ufJ3KoNINHtrxzV4:fhiiRVaautheXt2xcMpH2ID5Zm870DTZ8EvYdWVq2Yp7NRj0/zdP44PTmZiRHb8sAhjIQXuLjiZ+TAM=
+    secure: v1:w7+/mZiyrw4u8eGa:ub0md/wxgI2mxcZb8SjxkwZ3DJGyFCmQv4fz3FiGVDBqxnT0E66yZ+CKusnwIZD4Ce2jcQOPYxyNwSoY
 secretsprovider: awskms://alias/packheavy-pulumi?region=ap-southeast-2
 encryptedkey: AQICAHjGDgitXKPBo0Y/3uXDmWS3c91I03BZHJkHV3NDE/mTSAHtJ49HcwoyO05RTk1/eofyAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMR/HLIT7F22rxA1RSAgEQgDvLZS0gJKYFU4DKFEicBOtaSOenBNDOASWP4ba1VMMdrR7qpMzr1z/+DoDN9iID/hFg1qhXBoVISGrF8g==

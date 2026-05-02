@@ -4,6 +4,9 @@ defmodule Packheavy.Accounts do
 
   resources do
     resource Packheavy.Accounts.Token
-    resource Packheavy.Accounts.User
+
+    resource Packheavy.Accounts.User do
+      define :update_profile, action: :update_profile
+    end
   end
 end

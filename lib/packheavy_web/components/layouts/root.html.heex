@@ -7,6 +7,19 @@
     <.live_title default="Packheavy">
       {assigns[:page_title]}
     </.live_title>
+    <%= if og = assigns[:og] do %>
+      <%!-- Driven by LiveView mount; rendered on the initial dead
+            render so Slack/Discord/iMessage/Twitter unfurls work. --%>
+      <meta name="description" content={og.description} />
+      <meta property="og:type" content="website" />
+      <meta property="og:site_name" content="packheavy" />
+      <meta property="og:title" content={og.title} />
+      <meta property="og:description" content={og.description} />
+      <meta property="og:url" content={og.url} />
+      <meta name="twitter:card" content="summary" />
+      <meta name="twitter:title" content={og.title} />
+      <meta name="twitter:description" content={og.description} />
+    <% end %>
     <link rel="icon" type="image/png" sizes="32x32" href={~p"/images/favicon-32.png"} />
     <link rel="icon" type="image/png" sizes="16x16" href={~p"/images/favicon-16.png"} />
     <link rel="icon" type="image/svg+xml" href={~p"/favicon.svg"} />
@@ -17,21 +30,46 @@
     </script>
     <script>
       (() => {
-        const setTheme = (theme) => {
+        const VALID = ["system", "light", "dark"];
+
+        // DOM update only — never touches localStorage. Used by the
+        // storage-event listener (cross-tab sync) and the initial
+        // boot. Writing to localStorage from inside a `storage`
+        // handler creates a ping-pong with the other tab.
+        const apply = (theme) => {
+          if (!VALID.includes(theme)) return;
           if (theme === "system") {
-            localStorage.removeItem("phx:theme");
             document.documentElement.removeAttribute("data-theme");
           } else {
-            localStorage.setItem("phx:theme", theme);
             document.documentElement.setAttribute("data-theme", theme);
           }
         };
+
+        // Persist + apply. Used only when the user clicks a toggle
+        // button. The localStorage write triggers `storage` events on
+        // OTHER tabs (which then `apply` without writing back).
+        const setTheme = (theme) => {
+          if (!VALID.includes(theme)) return;
+          if (theme === "system") {
+            localStorage.removeItem("phx:theme");
+          } else {
+            localStorage.setItem("phx:theme", theme);
+          }
+          apply(theme);
+        };
+
         if (!document.documentElement.hasAttribute("data-theme")) {
-          setTheme(localStorage.getItem("phx:theme") || "system");
+          apply(localStorage.getItem("phx:theme") || "system");
         }
-        window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
-        
-        window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme));
+
+        window.addEventListener("storage", (e) => {
+          if (e.key === "phx:theme") apply(e.newValue || "system");
+        });
+
+        window.addEventListener("phx:set-theme", (e) => {
+          const el = e.target && e.target.closest && e.target.closest("[data-phx-theme]");
+          if (el) setTheme(el.dataset.phxTheme);
+        });
       })();
     </script>
   </head>

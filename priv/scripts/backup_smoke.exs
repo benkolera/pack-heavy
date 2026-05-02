@@ -142,7 +142,27 @@ Ash.create!(
   opts
 )
 
-Ash.create!(Packheavy.Trips.Trip, %{name: "Should-be-wiped trip"}, opts)
+doomed_trip = Ash.create!(Packheavy.Trips.Trip, %{name: "Should-be-wiped trip"}, opts)
+
+# Hiker + contact attached to the doomed trip — should cascade-delete
+# when restore wipes it.
+doomed_hiker =
+  Ash.create!(
+    Packheavy.Trips.TripHiker,
+    %{trip_id: doomed_trip.id, name: "Should-be-wiped hiker", role: :leader},
+    opts
+  )
+
+doomed_contact =
+  Ash.create!(
+    Packheavy.Trips.TripContact,
+    %{
+      trip_id: doomed_trip.id,
+      name: "Should-be-wiped contact",
+      kind: :emergency_primary
+    },
+    opts
+  )
 
 # --- Restore --------------------------------------------------------------
 
@@ -240,6 +260,18 @@ ki_item_ids = Enum.map(kit_after.kit_items, & &1.item_id)
 
 unless Enum.all?(ki_item_ids, &(&1 in new_item_ids)) do
   raise "kit_items.item_id remap failed"
+end
+
+# Verify the doomed trip's hiker + contact were cascade-deleted.
+# Both look up the records by id and expect them gone.
+case Ash.get(Packheavy.Trips.TripHiker, doomed_hiker.id, authorize?: false) do
+  {:error, _} -> :ok
+  {:ok, _} -> raise "doomed TripHiker survived the trip wipe"
+end
+
+case Ash.get(Packheavy.Trips.TripContact, doomed_contact.id, authorize?: false) do
+  {:error, _} -> :ok
+  {:ok, _} -> raise "doomed TripContact survived the trip wipe"
 end
 
 IO.puts("\n✓ Backup round-trip OK")

@@ -22,8 +22,28 @@ defmodule Packheavy.Trips do
       define :remove_trip_item, action: :destroy
       define :set_packed, action: :set_packed, args: [:packed]
       define :set_charged, action: :set_charged, args: [:charged]
+      define :set_tested, action: :set_tested, args: [:tested]
+      define :set_carry_mode, action: :set_carry_mode, args: [:carry_mode]
     end
 
     resource Packheavy.Trips.TripKit
+
+    resource Packheavy.Trips.TripHiker do
+      define :create_trip_hiker, action: :create
+      define :update_trip_hiker, action: :update
+      define :destroy_trip_hiker, action: :destroy
+    end
+
+    resource Packheavy.Trips.TripContact do
+      define :create_trip_contact, action: :create
+      define :update_trip_contact, action: :update
+      define :destroy_trip_contact, action: :destroy
+    end
+
+    resource Packheavy.Trips.TripLeg do
+      define :create_trip_leg, action: :create
+      define :update_trip_leg, action: :update
+      define :destroy_trip_leg, action: :destroy
+    end
   end
 end

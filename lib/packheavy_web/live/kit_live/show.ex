@@ -28,8 +28,8 @@ defmodule PackheavyWeb.KitLive.Show do
     |> assign(:page_title, "Packheavy: Kit · #{kit.name}")
   end
 
-  defp existing_qty_on_kit(kit) do
-    kit.kit_items |> Map.new(fn ki -> {ki.item_id, ki.qty} end)
+  defp existing_slots_on_kit(kit) do
+    kit.kit_items |> Map.new(fn ki -> {ki.item_id, [%{qty: ki.qty, carry_mode: :main_pack}]} end)
   end
 
   @impl true
@@ -59,8 +59,11 @@ defmodule PackheavyWeb.KitLive.Show do
 
     item_ids = MapSet.union(MapSet.new(Map.keys(selected)), MapSet.new(Map.keys(existing_by_item)))
 
+    # Kits don't carry per-slot carry-mode; flatten the picker's slot
+    # list into a total qty per item.
     Enum.each(item_ids, fn item_id ->
-      desired = Map.get(selected, item_id, 0)
+      desired_slots = Map.get(selected, item_id, [])
+      desired = desired_slots |> Enum.map(& &1.qty) |> Enum.sum()
       existing = Map.get(existing_by_item, item_id)
 
       cond do
@@ -128,7 +131,7 @@ defmodule PackheavyWeb.KitLive.Show do
           module={PackheavyWeb.ItemPicker}
           id="kit-item-picker"
           items={@items}
-          existing_qty={existing_qty_on_kit(@kit)}
+          existing_slots={existing_slots_on_kit(@kit)}
           max_qty_for={:unlimited}
           title={"Items in " <> @kit.name}
           confirm_label="Save"
