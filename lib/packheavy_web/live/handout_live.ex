@@ -177,8 +177,8 @@ defmodule PackheavyWeb.HandoutLive do
           <h2 class="font-semibold">Trip overview</h2>
           <dl class="text-sm grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
             <div :if={@trip.area} class="sm:col-span-2"><dt class="opacity-60 inline">Area: </dt><dd class="inline">{@trip.area}</dd></div>
-            <div :if={@trip.park_url}><dt class="opacity-60 inline">Park: </dt><dd class="inline"><a href={@trip.park_url} class="link link-primary break-all">{@trip.park_url}</a></dd></div>
-            <div :if={@trip.route_url}><dt class="opacity-60 inline">Route: </dt><dd class="inline"><a href={@trip.route_url} class="link link-primary break-all">{@trip.route_url}</a></dd></div>
+            <div :if={@trip.park_url} class="sm:col-span-2"><dt class="opacity-60 inline">Park: </dt><dd class="inline"><a href={@trip.park_url} class="link link-primary break-all">{@trip.park_url}</a></dd></div>
+            <div :if={@trip.route_url} class="sm:col-span-2"><dt class="opacity-60 inline">Route: </dt><dd class="inline"><a href={@trip.route_url} class="link link-primary break-all">{@trip.route_url}</a></dd></div>
             <div :if={@trip.departure_at}><dt class="opacity-60 inline">Depart: </dt><dd class="inline">{format_datetime(@trip.departure_at)}</dd></div>
             <div :if={@trip.return_at}><dt class="opacity-60 inline">Return: </dt><dd class="inline">{format_datetime(@trip.return_at)}</dd></div>
             <div :if={@trip.escalation_criteria} class="sm:col-span-2"><dt class="opacity-60">Escalation criteria:</dt><dd class="whitespace-pre-line">{@trip.escalation_criteria}</dd></div>
@@ -204,8 +204,10 @@ defmodule PackheavyWeb.HandoutLive do
                   <span class="opacity-70 ml-2">
                     <span :if={h.phone}>📱 <a href={"tel:#{h.phone}"} class="link">{h.phone}</a></span>
                     <span :if={h.satellite_sms} class="ml-2">🛰 <a href={"tel:#{h.satellite_sms}"} class="link">{h.satellite_sms}</a></span>
-                    <span :if={h.location_tracker_url} class="ml-2 break-all">· Tracker: <a href={h.location_tracker_url} class="link link-primary">{h.location_tracker_url}</a><span :if={h.location_tracker_password}> · "{h.location_tracker_password}"</span></span>
                   </span>
+                  <div :if={h.location_tracker_url} class="opacity-70 break-all mt-1">
+                    Tracker: <a href={h.location_tracker_url} class="link link-primary">{h.location_tracker_url}</a><span :if={h.location_tracker_password}> · "{h.location_tracker_password}"</span>
+                  </div>
                   <span :if={h.notes} class="block opacity-70 whitespace-pre-line mt-1 text-xs">{h.notes}</span>
                 </div>
               <% else %>
