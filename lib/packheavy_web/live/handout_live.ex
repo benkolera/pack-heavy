@@ -225,11 +225,15 @@ defmodule PackheavyWeb.HandoutLive do
             </div>
             <div :if={@trip.escalation_criteria} class="sm:col-span-2">
               <dt class="opacity-60">Escalation criteria:</dt>
-              <dd class="whitespace-pre-line">{@trip.escalation_criteria}</dd>
+              <dd class="markdown text-sm">
+                {PackheavyWeb.Markdown.render(@trip.escalation_criteria)}
+              </dd>
             </div>
             <div :if={@trip.gear_highlights} class="sm:col-span-2">
               <dt class="opacity-60">Gear highlights:</dt>
-              <dd class="whitespace-pre-line">{@trip.gear_highlights}</dd>
+              <dd class="markdown text-sm">
+                {PackheavyWeb.Markdown.render(@trip.gear_highlights)}
+              </dd>
             </div>
             <div :if={@trip.notes && @trip.notes != ""} class="sm:col-span-2">
               <dt class="opacity-60">Notes:</dt>
