@@ -103,6 +103,10 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Tzdata is the time-zone database used by Astro for sunrise/sunset
+# calculations and any DateTime.shift_zone calls.
+config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
+
 # Register `.gpx` so Phoenix LiveView's `allow_upload(accept: ~w(.gpx))`
 # resolves it via the MIME registry. The standard registered MIME for
 # GPX is `application/gpx+xml`.

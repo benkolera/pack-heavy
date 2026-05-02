@@ -129,7 +129,7 @@ defmodule PackheavyWeb.PublicTripLive do
       assigns.trip.trip_items
       |> Enum.sort_by(fn ti ->
         item = ti.item
-        String.downcase("#{item && item.brand || ""} #{item && item.title}")
+        String.downcase("#{(item && item.brand) || ""} #{item && item.title}")
       end)
       |> Enum.group_by(fn ti ->
         case ti.item && ti.item.category_data do
@@ -247,8 +247,8 @@ defmodule PackheavyWeb.PublicTripLive do
         <% total_distance_m = @legs_with_color |> Enum.map(& &1.distance_m) |> Enum.sum() %>
         <% total_gain_m = @legs_with_color |> Enum.map(& &1.elevation_gain_m) |> Enum.sum() %>
         <% pack_kg = @loads.full_kg %>
-
-        <!-- Top-of-page summary: route stats + gear stats side-by-side. -->
+        
+    <!-- Top-of-page summary: route stats + gear stats side-by-side. -->
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
           <div :if={@has_legs?} class="card bg-base-200 p-3">
             <div class="text-xs opacity-70">Distance</div>
@@ -262,12 +262,20 @@ defmodule PackheavyWeb.PublicTripLive do
           </div>
           <div :if={@has_legs? && time_h} class="card bg-base-200 p-3">
             <div class="text-xs opacity-70">Walking time</div>
-            <div class="text-lg font-semibold tabular-nums">{Packheavy.Trips.Helpers.format_hours(time_h)}</div>
+            <div class="text-lg font-semibold tabular-nums">
+              {Packheavy.Trips.Helpers.format_hours(time_h)}
+            </div>
           </div>
           <div class="card bg-base-200 p-3">
             <div class="text-xs opacity-70">Pack weight</div>
-            <div class="text-lg font-semibold tabular-nums">{:erlang.float_to_binary(pack_kg, decimals: 2)} kg</div>
-            <div :if={@loads.sidequest_kg > 0} class="text-xs opacity-50 tabular-nums" title="Worn + day-pack only">
+            <div class="text-lg font-semibold tabular-nums">
+              {:erlang.float_to_binary(pack_kg, decimals: 2)} kg
+            </div>
+            <div
+              :if={@loads.sidequest_kg > 0}
+              class="text-xs opacity-50 tabular-nums"
+              title="Worn + day-pack only"
+            >
               sidequest: {:erlang.float_to_binary(@loads.sidequest_kg, decimals: 2)} kg
             </div>
           </div>
@@ -286,8 +294,8 @@ defmodule PackheavyWeb.PublicTripLive do
             <div class="text-xs opacity-50">camp/sleep BMR</div>
           </div>
         </div>
-
-        <!-- Route — collapsible. Open by default if there are legs. -->
+        
+    <!-- Route — collapsible. Open by default if there are legs. -->
         <details :if={@has_legs?} class="card bg-base-200" open>
           <summary class="cursor-pointer p-4 font-semibold">Route</summary>
           <div class="p-4 pt-0 space-y-4">
@@ -304,24 +312,51 @@ defmodule PackheavyWeb.PublicTripLive do
                 <div :for={{day, day_legs} <- @legs_by_day}>
                   <div class="flex items-baseline gap-3 flex-wrap mb-1">
                     <h3 class="text-sm font-bold uppercase tracking-wide opacity-80">
-                      Day {day}<span :if={date = day_date(@trip, day)} class="opacity-60 font-normal normal-case ml-2">{date}</span>
+                      Day {day}<span
+                        :if={date = day_date(@trip, day)}
+                        class="opacity-60 font-normal normal-case ml-2"
+                      >{date}</span>
                     </h3>
                     <span :if={day_legs != []} class="text-xs opacity-60 tabular-nums">
                       {day_summary(day_legs)}
+                    </span>
+                    <span
+                      :if={sun = Packheavy.Trips.Helpers.day_sun(@trip, day)}
+                      class="text-xs opacity-60 tabular-nums"
+                    >
+                      ☀ {Packheavy.Trips.Helpers.format_clock(sun.sunrise)}–{Packheavy.Trips.Helpers.format_clock(
+                        sun.sunset
+                      )} · {Packheavy.Trips.Helpers.format_hours(sun.daylight_h)} daylight
                     </span>
                     <span :if={day_legs == []} class="text-xs opacity-50 italic">no legs</span>
                   </div>
 
                   <div :for={leg <- day_legs} class="card bg-base-100 p-3 space-y-2 mb-2">
                     <div class="flex items-start gap-2">
-                      <span class="inline-block w-3 h-3 rounded-sm shrink-0 mt-1.5" style={"background-color: #{leg.color}"}></span>
+                      <span
+                        class="inline-block w-3 h-3 rounded-sm shrink-0 mt-1.5"
+                        style={"background-color: #{leg.color}"}
+                      >
+                      </span>
                       <div class="flex-1 min-w-0">
                         <div class="font-semibold break-words">
                           {leg.name}
-                          <span :if={leg.sidequest} class="badge badge-xs badge-info ml-1 align-middle">sidequest</span>
+                          <span
+                            :if={leg.sidequest}
+                            class="badge badge-xs badge-info ml-1 align-middle"
+                          >
+                            sidequest
+                          </span>
                         </div>
                         <div class="text-xs opacity-70 tabular-nums mt-0.5">
-                          {:erlang.float_to_binary(leg.distance_m / 1000, decimals: 2)} km · +{round(leg.elevation_gain_m)} m · {Packheavy.Trips.Helpers.format_hours(Packheavy.Trips.Helpers.leg_time_h(leg))}<%= if leg_calories = Packheavy.Trips.Helpers.leg_calories(leg, @leader_kg, @loads) do %> · {leg_calories} kcal<% end %>
+                          {:erlang.float_to_binary(leg.distance_m / 1000, decimals: 2)} km · +{round(
+                            leg.elevation_gain_m
+                          )} m · {Packheavy.Trips.Helpers.format_hours(
+                            Packheavy.Trips.Helpers.leg_time_h(leg)
+                          )}
+                          <%= if leg_calories = Packheavy.Trips.Helpers.leg_calories(leg, @leader_kg, @loads) do %>
+                            · {leg_calories} kcal
+                          <% end %>
                         </div>
                       </div>
                       <button
@@ -346,7 +381,10 @@ defmodule PackheavyWeb.PublicTripLive do
                         {Phoenix.HTML.raw(leg_elevation_svg(leg))}
                       </div>
                     <% end %>
-                    <div :if={leg.notes && leg.notes != ""} class="markdown text-sm opacity-90 border-l-2 border-base-300 pl-3 ml-5">
+                    <div
+                      :if={leg.notes && leg.notes != ""}
+                      class="markdown text-sm opacity-90 border-l-2 border-base-300 pl-3 ml-5"
+                    >
                       {PackheavyWeb.Markdown.render(leg.notes)}
                     </div>
                   </div>
@@ -355,8 +393,8 @@ defmodule PackheavyWeb.PublicTripLive do
             </div>
           </div>
         </details>
-
-        <!-- Pack — collapsible. Open by default. -->
+        
+    <!-- Pack — collapsible. Open by default. -->
         <details class="card bg-base-200" open>
           <summary class="cursor-pointer p-4 font-semibold">Pack</summary>
           <div class="p-4 pt-0 space-y-4">
@@ -369,7 +407,9 @@ defmodule PackheavyWeb.PublicTripLive do
 
             <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
               <div class="space-y-1">
-                <h3 class="text-xs font-semibold opacity-70 uppercase tracking-wide">Weight breakdown</h3>
+                <h3 class="text-xs font-semibold opacity-70 uppercase tracking-wide">
+                  Weight breakdown
+                </h3>
                 <TripShow.weight_breakdown trip={@trip} />
               </div>
               <div class="space-y-1">
@@ -384,7 +424,9 @@ defmodule PackheavyWeb.PublicTripLive do
                   </div>
                   <div class="card bg-base-100 p-3">
                     <div class="text-xs opacity-70">Power</div>
-                    <div class="text-lg font-semibold tabular-nums">{Map.get(totals, :power_mah, 0)} mAh</div>
+                    <div class="text-lg font-semibold tabular-nums">
+                      {Map.get(totals, :power_mah, 0)} mAh
+                    </div>
                   </div>
                 </div>
               </div>
@@ -398,7 +440,11 @@ defmodule PackheavyWeb.PublicTripLive do
                   <div class="flex justify-between items-baseline border-b border-success pb-0.5 mb-1">
                     <h3 class="text-success text-xs font-bold uppercase tracking-wide">{label}</h3>
                     <span class="text-success text-xs tabular-nums opacity-80">
-                      <span :if={cap = @section_capacity.(cat)} class="mr-2">Σ {TripShow.format_capacity(cap)}L</span><span :if={kcal = @section_calories.(cat)} class="mr-2">Σ {kcal}kcal<span :if={cat == :food && kcal_per_g}> · avg {kcal_per_g} kcal/g</span></span>{@section_weight.(cat)}g
+                      <span :if={cap = @section_capacity.(cat)} class="mr-2">
+                        Σ {TripShow.format_capacity(cap)}L
+                      </span><span :if={kcal = @section_calories.(cat)} class="mr-2">Σ {kcal}kcal<span :if={
+                          cat == :food && kcal_per_g
+                        }> · avg {kcal_per_g} kcal/g</span></span>{@section_weight.(cat)}g
                     </span>
                   </div>
                   <ul class="divide-y divide-base-300">
@@ -407,14 +453,23 @@ defmodule PackheavyWeb.PublicTripLive do
                       class="grid grid-cols-[1fr_3rem_4.5rem_5rem_3.5rem_5.5rem] items-center gap-2 py-2 px-1 text-sm"
                     >
                       <span class="min-w-0 truncate">
-                        <span :if={ti.item.brand} class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom">{ti.item.brand}</span>
+                        <span
+                          :if={ti.item.brand}
+                          class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom"
+                        >
+                          {ti.item.brand}
+                        </span>
                         {ti.item.title}
                       </span>
                       <span class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">
-                        <%= if cap = TripShow.pack_capacity(ti) do %>{TripShow.format_capacity(cap)}L<% end %>
+                        <%= if cap = TripShow.pack_capacity(ti) do %>
+                          {TripShow.format_capacity(cap)}L
+                        <% end %>
                       </span>
                       <span class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">
-                        <%= if kcal = TripShow.food_calories(ti) do %>{kcal}kcal<% end %>
+                        <%= if kcal = TripShow.food_calories(ti) do %>
+                          {kcal}kcal
+                        <% end %>
                       </span>
                       <span class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">
                         <%= if ti.qty > 1 do %>
@@ -426,7 +481,9 @@ defmodule PackheavyWeb.PublicTripLive do
                       <span class="opacity-60 text-xs tabular-nums text-right">
                         {(ti.item.weight_g || 0) * ti.qty}g
                       </span>
-                      <span class="badge badge-ghost badge-xs whitespace-nowrap justify-self-center">{TripShow.carry_mode_label(ti.carry_mode)}</span>
+                      <span class="badge badge-ghost badge-xs whitespace-nowrap justify-self-center">
+                        {TripShow.carry_mode_label(ti.carry_mode)}
+                      </span>
                     </li>
                   </ul>
                 </section>
@@ -493,6 +550,7 @@ defmodule PackheavyWeb.PublicTripLive do
           |> Enum.map_join("", fn [a, b] ->
             slope = signed_slope_pct(a, b)
             fill = incline_color(slope)
+
             "<polygon points=\"#{fmt(a.x)},190 #{fmt(a.x)},#{fmt(a.y)} #{fmt(b.x)},#{fmt(b.y)} #{fmt(b.x)},190\" fill=\"#{fill}\" stroke=\"none\" />"
           end)
 

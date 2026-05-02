@@ -164,8 +164,7 @@ defmodule PackheavyWeb.TripLive.Show do
     |> Ash.Changeset.for_update(:complete)
     |> Ash.update!(actor: socket.assigns.current_user)
 
-    {:noreply,
-     socket |> put_flash(:info, "Trip complete. Food qty decremented.") |> reload()}
+    {:noreply, socket |> put_flash(:info, "Trip complete. Food qty decremented.") |> reload()}
   end
 
   # ---- Route tab events --------------------------------------------------
@@ -438,7 +437,8 @@ defmodule PackheavyWeb.TripLive.Show do
       socket.assigns.trip.trip_items
       |> Enum.group_by(& &1.item_id)
 
-    item_ids = MapSet.union(MapSet.new(Map.keys(selected)), MapSet.new(Map.keys(existing_by_item)))
+    item_ids =
+      MapSet.union(MapSet.new(Map.keys(selected)), MapSet.new(Map.keys(existing_by_item)))
 
     Enum.each(item_ids, fn item_id ->
       desired_slots = Map.get(selected, item_id, [])
@@ -537,10 +537,38 @@ defmodule PackheavyWeb.TripLive.Show do
 
       <div role="tablist" class="tabs tabs-boxed">
         <.link navigate={~p"/trips/#{@trip.id}"} role="tab" class="tab">Details</.link>
-        <a role="tab" class={["tab", @tab == :route && "tab-active"]} phx-click="set_tab" phx-value-tab="route">Route</a>
-        <a role="tab" class={["tab", @tab == :plan && "tab-active"]} phx-click="set_tab" phx-value-tab="plan">Plan</a>
-        <a role="tab" class={["tab", @tab == :pack && "tab-active"]} phx-click="set_tab" phx-value-tab="pack">Pack</a>
-        <a role="tab" class={["tab", @tab == :complete && "tab-active"]} phx-click="set_tab" phx-value-tab="complete">Complete</a>
+        <a
+          role="tab"
+          class={["tab", @tab == :route && "tab-active"]}
+          phx-click="set_tab"
+          phx-value-tab="route"
+        >
+          Route
+        </a>
+        <a
+          role="tab"
+          class={["tab", @tab == :plan && "tab-active"]}
+          phx-click="set_tab"
+          phx-value-tab="plan"
+        >
+          Plan
+        </a>
+        <a
+          role="tab"
+          class={["tab", @tab == :pack && "tab-active"]}
+          phx-click="set_tab"
+          phx-value-tab="pack"
+        >
+          Pack
+        </a>
+        <a
+          role="tab"
+          class={["tab", @tab == :complete && "tab-active"]}
+          phx-click="set_tab"
+          phx-value-tab="complete"
+        >
+          Complete
+        </a>
       </div>
 
       <%= case @tab do %>
@@ -601,26 +629,40 @@ defmodule PackheavyWeb.TripLive.Show do
             <.icon name="hero-calendar-days-mini" class="size-4 opacity-70" />
             {@days} day{if @days == 1, do: "", else: "s"}
           </span>
-          <span :if={@summary_distance_km} class="flex items-center gap-1 whitespace-nowrap" title="Summed from GPX legs">
+          <span
+            :if={@summary_distance_km}
+            class="flex items-center gap-1 whitespace-nowrap"
+            title="Summed from GPX legs"
+          >
             <.icon name="hero-map-mini" class="size-4 opacity-70" />
             {:erlang.float_to_binary(@summary_distance_km, decimals: 1)}km
           </span>
-          <span :if={@summary_elevation_m} class="flex items-center gap-1 whitespace-nowrap" title="Summed from GPX legs">
+          <span
+            :if={@summary_elevation_m}
+            class="flex items-center gap-1 whitespace-nowrap"
+            title="Summed from GPX legs"
+          >
             <.icon name="hero-arrow-trending-up-mini" class="size-4 opacity-70" />
             +{round(@summary_elevation_m)}m
           </span>
-          <span :if={@summary_time_h} class="flex items-center gap-1 whitespace-nowrap" title="Naismith estimate, summed from per-leg pace">
+          <span
+            :if={@summary_time_h}
+            class="flex items-center gap-1 whitespace-nowrap"
+            title="Naismith estimate, summed from per-leg pace"
+          >
             <.icon name="hero-clock-mini" class="size-4 opacity-70" />
             {Packheavy.Trips.Helpers.format_hours(@summary_time_h)}
           </span>
-          <span :if={@summary_weight_kg} class="flex items-center gap-1 whitespace-nowrap" title="Leader hiker weight">
+          <span
+            :if={@summary_weight_kg}
+            class="flex items-center gap-1 whitespace-nowrap"
+            title="Leader hiker weight"
+          >
             <.icon name="hero-scale-mini" class="size-4 opacity-70" />
             {@summary_weight_kg}kg
           </span>
           <span
-            :if={
-              !@summary_distance_km && !@summary_elevation_m && !@summary_weight_kg && !@days
-            }
+            :if={!@summary_distance_km && !@summary_elevation_m && !@summary_weight_kg && !@days}
             class="opacity-60 italic"
           >
             no details yet
@@ -802,7 +844,7 @@ defmodule PackheavyWeb.TripLive.Show do
       assigns.trip.trip_items
       |> Enum.sort_by(fn ti ->
         item = ti.item
-        String.downcase("#{item && item.brand || ""} #{item && item.title}")
+        String.downcase("#{(item && item.brand) || ""} #{item && item.title}")
       end)
       |> Enum.group_by(fn ti ->
         case ti.item && ti.item.category_data do
@@ -886,17 +928,31 @@ defmodule PackheavyWeb.TripLive.Show do
         <div class="grid grid-cols-3 gap-2">
           <div class="summary-card card bg-base-200 p-3">
             <div class="text-xs opacity-70">Worn</div>
-            <div class="text-lg font-semibold tabular-nums">{:erlang.float_to_binary((loads.by_carry.worn + loads.water_by_carry.worn) / 1000, decimals: 2)} kg</div>
+            <div class="text-lg font-semibold tabular-nums">
+              {:erlang.float_to_binary((loads.by_carry.worn + loads.water_by_carry.worn) / 1000,
+                decimals: 2
+              )} kg
+            </div>
           </div>
           <div class="summary-card card bg-base-200 p-3">
             <div class="text-xs opacity-70">Day pack</div>
-            <div class="text-lg font-semibold tabular-nums">{:erlang.float_to_binary((loads.by_carry.day_pack + loads.water_by_carry.day_pack) / 1000, decimals: 2)} kg</div>
-            <div class="text-xs opacity-50 tabular-nums">sidequest load: {:erlang.float_to_binary(loads.sidequest_kg, decimals: 2)} kg</div>
+            <div class="text-lg font-semibold tabular-nums">
+              {:erlang.float_to_binary(
+                (loads.by_carry.day_pack + loads.water_by_carry.day_pack) / 1000, decimals: 2)} kg
+            </div>
+            <div class="text-xs opacity-50 tabular-nums">
+              sidequest load: {:erlang.float_to_binary(loads.sidequest_kg, decimals: 2)} kg
+            </div>
           </div>
           <div class="summary-card card bg-base-200 p-3">
             <div class="text-xs opacity-70">Main pack</div>
-            <div class="text-lg font-semibold tabular-nums">{:erlang.float_to_binary((loads.by_carry.main_pack + loads.water_by_carry.main_pack) / 1000, decimals: 2)} kg</div>
-            <div class="text-xs opacity-50 tabular-nums">full carry: {:erlang.float_to_binary(loads.full_kg, decimals: 2)} kg</div>
+            <div class="text-lg font-semibold tabular-nums">
+              {:erlang.float_to_binary(
+                (loads.by_carry.main_pack + loads.water_by_carry.main_pack) / 1000, decimals: 2)} kg
+            </div>
+            <div class="text-xs opacity-50 tabular-nums">
+              full carry: {:erlang.float_to_binary(loads.full_kg, decimals: 2)} kg
+            </div>
           </div>
         </div>
       </div>
@@ -951,7 +1007,10 @@ defmodule PackheavyWeb.TripLive.Show do
       </div>
     </div>
 
-    <div :if={report.errors != [] or report.warnings != []} class="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-3">
+    <div
+      :if={report.errors != [] or report.warnings != []}
+      class="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-3"
+    >
       <div :if={report.errors != []} class="card bg-error/10 border border-error p-3">
         <div class="text-xs font-semibold uppercase tracking-wide text-error mb-1">Errors</div>
         <ul class="list-disc pl-5 text-sm text-error space-y-0.5">
@@ -983,17 +1042,38 @@ defmodule PackheavyWeb.TripLive.Show do
           <div class="flex justify-between items-baseline border-b border-success pb-0.5 mb-1">
             <h3 class="text-success text-xs font-bold uppercase tracking-wide">{label}</h3>
             <span class="text-success text-xs tabular-nums opacity-80">
-              <span :if={cap = @section_capacity.(cat)} class="mr-2">Σ {format_capacity(cap)}L</span><span :if={kcal = @section_calories.(cat)} class="mr-2">Σ {kcal}kcal<span :if={cat == :food && kcal_per_g}> · avg {kcal_per_g} kcal/g</span></span>{@section_weight.(cat)}g
+              <span :if={cap = @section_capacity.(cat)} class="mr-2">Σ {format_capacity(cap)}L</span><span
+                :if={kcal = @section_calories.(cat)}
+                class="mr-2"
+              >Σ {kcal}kcal<span :if={cat == :food && kcal_per_g}> · avg {kcal_per_g} kcal/g</span></span>{@section_weight.(
+                cat
+              )}g
             </span>
           </div>
           <ul class="divide-y divide-base-300">
-            <li :for={ti <- Map.get(@grouped, cat, [])} class="flex items-center py-2 px-0.5 sm:px-1 gap-1 sm:gap-2">
+            <li
+              :for={ti <- Map.get(@grouped, cat, [])}
+              class="flex items-center py-2 px-0.5 sm:px-1 gap-1 sm:gap-2"
+            >
               <span class="flex-1 min-w-0 truncate text-sm">
-                <span :if={ti.item.brand} class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom">{ti.item.brand}</span>{ti.item.title}
+                <span
+                  :if={ti.item.brand}
+                  class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom"
+                >{ti.item.brand}</span>{ti.item.title}
                 <span :if={ti.source == :kit} class="badge badge-xs ml-1">kit</span>
               </span>
-              <span :if={cap = pack_capacity(ti)} class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">{format_capacity(cap)}L</span>
-              <span :if={kcal = food_calories(ti)} class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">{kcal}kcal</span>
+              <span
+                :if={cap = pack_capacity(ti)}
+                class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap"
+              >
+                {format_capacity(cap)}L
+              </span>
+              <span
+                :if={kcal = food_calories(ti)}
+                class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap"
+              >
+                {kcal}kcal
+              </span>
               <span class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">
                 <%= if ti.qty > 1 do %>
                   {ti.item.weight_g || 0}g×{ti.qty}
@@ -1001,9 +1081,20 @@ defmodule PackheavyWeb.TripLive.Show do
                   ×1
                 <% end %>
               </span>
-              <span class="opacity-60 text-xs tabular-nums w-14 sm:w-16 text-right">{(ti.item.weight_g || 0) * ti.qty}g</span>
-              <span class="badge badge-ghost badge-sm whitespace-nowrap">{carry_mode_label(ti.carry_mode)}</span>
-              <button phx-click="remove_item" phx-value-id={ti.id} data-confirm="Remove from trip?" class="btn btn-ghost btn-xs">×</button>
+              <span class="opacity-60 text-xs tabular-nums w-14 sm:w-16 text-right">
+                {(ti.item.weight_g || 0) * ti.qty}g
+              </span>
+              <span class="badge badge-ghost badge-sm whitespace-nowrap">
+                {carry_mode_label(ti.carry_mode)}
+              </span>
+              <button
+                phx-click="remove_item"
+                phx-value-id={ti.id}
+                data-confirm="Remove from trip?"
+                class="btn btn-ghost btn-xs"
+              >
+                ×
+              </button>
             </li>
           </ul>
         </section>
@@ -1090,7 +1181,9 @@ defmodule PackheavyWeb.TripLive.Show do
   def carry_mode_label(nil), do: "Main pack"
 
   def format_capacity(v) when is_float(v) do
-    if v == Float.round(v), do: Integer.to_string(trunc(v)), else: :erlang.float_to_binary(v, decimals: 1)
+    if v == Float.round(v),
+      do: Integer.to_string(trunc(v)),
+      else: :erlang.float_to_binary(v, decimals: 1)
   end
 
   def format_capacity(v), do: to_string(v)
@@ -1125,7 +1218,7 @@ defmodule PackheavyWeb.TripLive.Show do
       assigns.trip.trip_items
       |> Enum.sort_by(fn ti ->
         item = ti.item
-        String.downcase("#{item && item.brand || ""} #{item && item.title}")
+        String.downcase("#{(item && item.brand) || ""} #{item && item.title}")
       end)
       |> Enum.group_by(fn ti ->
         case ti.item && ti.item.category_data do
@@ -1169,19 +1262,31 @@ defmodule PackheavyWeb.TripLive.Show do
           <div class="flex items-center gap-2 px-1 pb-1 text-[10px] uppercase tracking-wide opacity-60">
             <span class="flex-1"></span>
             <span class="flex items-center justify-end gap-1 w-12 sm:w-24 shrink-0" aria-hidden="true">
-              <.icon name="hero-bolt-mini" class="size-3" /><span class="hidden sm:inline">charged</span>
+              <.icon name="hero-bolt-mini" class="size-3" /><span class="hidden sm:inline">
+                charged
+              </span>
             </span>
             <span class="flex items-center justify-end gap-1 w-12 sm:w-24 shrink-0" aria-hidden="true">
-              <.icon name="hero-check-circle-mini" class="size-3" /><span class="hidden sm:inline">tested</span>
+              <.icon name="hero-check-circle-mini" class="size-3" /><span class="hidden sm:inline">
+                tested
+              </span>
             </span>
             <span class="flex items-center justify-end gap-1 w-12 sm:w-24 shrink-0" aria-hidden="true">
-              <.icon name="hero-archive-box-mini" class="size-3" /><span class="hidden sm:inline">packed</span>
+              <.icon name="hero-archive-box-mini" class="size-3" /><span class="hidden sm:inline">
+                packed
+              </span>
             </span>
           </div>
           <ul class="divide-y divide-base-300">
-            <li :for={ti <- Map.get(@grouped, cat, [])} class="flex items-center py-2 px-0.5 sm:px-1 gap-1 sm:gap-2">
+            <li
+              :for={ti <- Map.get(@grouped, cat, [])}
+              class="flex items-center py-2 px-0.5 sm:px-1 gap-1 sm:gap-2"
+            >
               <span class="flex-1 min-w-0 truncate text-sm">
-                <span :if={ti.item.brand} class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom">{ti.item.brand}</span>{ti.item.title}
+                <span
+                  :if={ti.item.brand}
+                  class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom"
+                >{ti.item.brand}</span>{ti.item.title}
               </span>
               <span class="text-xs opacity-60 shrink-0 tabular-nums whitespace-nowrap">
                 <%= if ti.qty > 1 do %>
@@ -1192,20 +1297,53 @@ defmodule PackheavyWeb.TripLive.Show do
               </span>
               <span :if={ti.source == :kit} class="badge badge-xs shrink-0">kit</span>
               <%= if PackheavyWeb.TripLive.Show.needs_charging?(ti, @rechargeable_battery_ids) do %>
-                <label class="flex items-center justify-end cursor-pointer w-12 sm:w-24 shrink-0" aria-label="charged">
-                  <input type="checkbox" class="checkbox md:checkbox-lg print:hidden" checked={ti.charged} phx-click="toggle_charged" phx-value-id={ti.id} />
-                  <span class="hidden print:inline text-base leading-none">{if ti.charged, do: "☑", else: "☐"}</span>
+                <label
+                  class="flex items-center justify-end cursor-pointer w-12 sm:w-24 shrink-0"
+                  aria-label="charged"
+                >
+                  <input
+                    type="checkbox"
+                    class="checkbox md:checkbox-lg print:hidden"
+                    checked={ti.charged}
+                    phx-click="toggle_charged"
+                    phx-value-id={ti.id}
+                  />
+                  <span class="hidden print:inline text-base leading-none">
+                    {if ti.charged, do: "☑", else: "☐"}
+                  </span>
                 </label>
               <% else %>
                 <span class="w-12 sm:w-24 shrink-0 text-right opacity-20">—</span>
               <% end %>
-              <label class="flex items-center justify-end cursor-pointer w-12 sm:w-24 shrink-0" aria-label="tested">
-                <input type="checkbox" class="checkbox md:checkbox-lg print:hidden" checked={ti.tested} phx-click="toggle_tested" phx-value-id={ti.id} />
-                <span class="hidden print:inline text-base leading-none">{if ti.tested, do: "☑", else: "☐"}</span>
+              <label
+                class="flex items-center justify-end cursor-pointer w-12 sm:w-24 shrink-0"
+                aria-label="tested"
+              >
+                <input
+                  type="checkbox"
+                  class="checkbox md:checkbox-lg print:hidden"
+                  checked={ti.tested}
+                  phx-click="toggle_tested"
+                  phx-value-id={ti.id}
+                />
+                <span class="hidden print:inline text-base leading-none">
+                  {if ti.tested, do: "☑", else: "☐"}
+                </span>
               </label>
-              <label class="flex items-center justify-end cursor-pointer w-12 sm:w-24 shrink-0" aria-label="packed">
-                <input type="checkbox" class="checkbox md:checkbox-lg print:hidden" checked={ti.packed} phx-click="toggle_packed" phx-value-id={ti.id} />
-                <span class="hidden print:inline text-base leading-none">{if ti.packed, do: "☑", else: "☐"}</span>
+              <label
+                class="flex items-center justify-end cursor-pointer w-12 sm:w-24 shrink-0"
+                aria-label="packed"
+              >
+                <input
+                  type="checkbox"
+                  class="checkbox md:checkbox-lg print:hidden"
+                  checked={ti.packed}
+                  phx-click="toggle_packed"
+                  phx-value-id={ti.id}
+                />
+                <span class="hidden print:inline text-base leading-none">
+                  {if ti.packed, do: "☑", else: "☐"}
+                </span>
               </label>
             </li>
           </ul>
@@ -1224,7 +1362,13 @@ defmodule PackheavyWeb.TripLive.Show do
         <p class="text-success mt-2">This trip is complete. Food qty has been decremented.</p>
       <% @trip.state == :packing -> %>
         <p class="opacity-70 mt-2">Marking complete will decrement food item qty by what you took.</p>
-        <button phx-click="complete" data-confirm="Complete trip and decrement food?" class="btn btn-success mt-2">Complete trip</button>
+        <button
+          phx-click="complete"
+          data-confirm="Complete trip and decrement food?"
+          class="btn btn-success mt-2"
+        >
+          Complete trip
+        </button>
       <% true -> %>
         <p class="opacity-70 mt-2">Move the trip through Plan → Pack first.</p>
     <% end %>
@@ -1307,7 +1451,9 @@ defmodule PackheavyWeb.TripLive.Show do
           <div class="text-3xl font-bold">
             {:erlang.float_to_binary(@total_distance / 1000, decimals: 2)} km
           </div>
-          <div class="text-xs opacity-60">{@legs_count} leg{if @legs_count == 1, do: "", else: "s"}</div>
+          <div class="text-xs opacity-60">
+            {@legs_count} leg{if @legs_count == 1, do: "", else: "s"}
+          </div>
         </div>
         <div class="card bg-base-200 p-4">
           <div class="text-sm opacity-70">Total elevation gain</div>
@@ -1316,14 +1462,14 @@ defmodule PackheavyWeb.TripLive.Show do
         <div class="card bg-base-200 p-4">
           <div class="text-sm opacity-70">Estimated time</div>
           <div class="text-3xl font-bold">
-            <%= if @total_time_h, do: Packheavy.Trips.Helpers.format_hours(@total_time_h), else: "—" %>
+            {if @total_time_h, do: Packheavy.Trips.Helpers.format_hours(@total_time_h), else: "—"}
           </div>
           <div class="text-xs opacity-60">Adjust pace per leg below.</div>
         </div>
         <div class="card bg-base-200 p-4">
           <div class="text-sm opacity-70">Burn (active)</div>
           <div class="text-3xl font-bold">
-            <%= if @active_calories, do: "#{@active_calories} kcal", else: "—" %>
+            {if @active_calories, do: "#{@active_calories} kcal", else: "—"}
           </div>
           <div :if={!@active_calories} class="text-xs opacity-60">
             Needs leader weight + items to estimate.
@@ -1333,7 +1479,7 @@ defmodule PackheavyWeb.TripLive.Show do
         <div class="card bg-base-200 p-4">
           <div class="text-sm opacity-70">Burn (resting)</div>
           <div class="text-3xl font-bold">
-            <%= if @resting_calories, do: "#{@resting_calories} kcal", else: "—" %>
+            {if @resting_calories, do: "#{@resting_calories} kcal", else: "—"}
           </div>
           <div :if={!@resting_calories} class="text-xs opacity-60">
             Needs trip dates + leader weight.
@@ -1341,7 +1487,6 @@ defmodule PackheavyWeb.TripLive.Show do
           <div :if={@resting_calories} class="text-xs opacity-60">camp/sleep BMR</div>
         </div>
       </div>
-
 
       <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(420px,640px)] gap-4">
         <div
@@ -1356,118 +1501,144 @@ defmodule PackheavyWeb.TripLive.Show do
 
         <div class="space-y-4 lg:max-h-[760px] lg:overflow-y-auto lg:pr-1">
           <div :for={{day, day_legs} <- @legs_by_day} class="space-y-2">
-        <div class="flex items-baseline gap-3 flex-wrap">
-          <h3 class="text-sm font-bold uppercase tracking-wide opacity-80">
-            Day {day}<span :if={date = day_date(@trip, day)} class="opacity-60 font-normal normal-case ml-2">{date}</span>
-          </h3>
-          <span :if={day_legs != []} class="text-xs opacity-60 tabular-nums">
-            {day_summary(day_legs)}
-          </span>
-          <span :if={day_legs == []} class="text-xs opacity-50 italic">no legs yet</span>
-          <button
-            type="button"
-            phx-click="open-add-leg"
-            phx-value-day={day}
-            class="btn btn-ghost btn-xs ml-auto"
-          >
-            + Add leg
-          </button>
-        </div>
-
-        <div :for={{leg, day_idx} <- Enum.with_index(day_legs)} class="card bg-base-200 p-4 space-y-2">
-          <div class="flex items-start gap-2">
-            <span
-              class="inline-block w-3 h-3 rounded-sm shrink-0 mt-1.5"
-              style={"background-color: #{leg.color}"}
-            ></span>
-            <div class="flex-1 min-w-0">
-              <div class="font-semibold break-words">
-                {leg.name}
-                <span :if={leg.sidequest} class="badge badge-xs badge-info ml-1 align-middle">sidequest</span>
-              </div>
-              <div class="text-xs opacity-70 tabular-nums mt-0.5">
-                {:erlang.float_to_binary(leg.distance_m / 1000, decimals: 2)} km · +{round(leg.elevation_gain_m)} m · {Packheavy.Trips.Helpers.format_hours(Packheavy.Trips.Helpers.leg_time_h(leg))}<%= if leg_calories = Packheavy.Trips.Helpers.leg_calories(leg, @leader_kg, @loads) do %> · {leg_calories} kcal<% end %>
-              </div>
-            </div>
-            <div class="flex items-center gap-1 shrink-0">
+            <div class="flex items-baseline gap-3 flex-wrap">
+              <h3 class="text-sm font-bold uppercase tracking-wide opacity-80">
+                Day {day}<span
+                  :if={date = day_date(@trip, day)}
+                  class="opacity-60 font-normal normal-case ml-2"
+                >{date}</span>
+              </h3>
+              <span :if={day_legs != []} class="text-xs opacity-60 tabular-nums">
+                {day_summary(day_legs)}
+              </span>
+              <span
+                :if={sun = Packheavy.Trips.Helpers.day_sun(@trip, day)}
+                class="text-xs opacity-60 tabular-nums"
+              >
+                ☀ {Packheavy.Trips.Helpers.format_clock(sun.sunrise)}–{Packheavy.Trips.Helpers.format_clock(
+                  sun.sunset
+                )} · {Packheavy.Trips.Helpers.format_hours(sun.daylight_h)} daylight
+              </span>
+              <span :if={day_legs == []} class="text-xs opacity-50 italic">no legs yet</span>
               <button
                 type="button"
-                phx-click="fly-to-leg"
-                phx-value-id={leg.id}
-                class="btn btn-ghost btn-xs"
-                title="Fly the map to this leg"
+                phx-click="open-add-leg"
+                phx-value-day={day}
+                class="btn btn-ghost btn-xs ml-auto"
               >
-                Fly
-              </button>
-              <button
-                type="button"
-                phx-click="move-leg"
-                phx-value-id={leg.id}
-                phx-value-dir="up"
-                class="btn btn-ghost btn-xs"
-                disabled={day_idx == 0}
-                title="Move up within day"
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                phx-click="move-leg"
-                phx-value-id={leg.id}
-                phx-value-dir="down"
-                class="btn btn-ghost btn-xs"
-                disabled={day_idx == length(day_legs) - 1}
-                title="Move down within day"
-              >
-                ↓
-              </button>
-              <button
-                type="button"
-                phx-click="open-edit-leg"
-                phx-value-id={leg.id}
-                class="btn btn-ghost btn-xs"
-                title="Edit name, day, sidequest, pace"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                phx-click="delete-leg"
-                phx-value-id={leg.id}
-                data-confirm={"Remove leg \"#{leg.name}\"?"}
-                class="btn btn-ghost btn-xs text-error"
-                title="Delete"
-              >
-                ×
+                + Add leg
               </button>
             </div>
-          </div>
 
-            <%= if leg_has_elevation?(leg) do %>
+            <div
+              :for={{leg, day_idx} <- Enum.with_index(day_legs)}
+              class="card bg-base-200 p-4 space-y-2"
+            >
+              <div class="flex items-start gap-2">
+                <span
+                  class="inline-block w-3 h-3 rounded-sm shrink-0 mt-1.5"
+                  style={"background-color: #{leg.color}"}
+                >
+                </span>
+                <div class="flex-1 min-w-0">
+                  <div class="font-semibold break-words">
+                    {leg.name}
+                    <span :if={leg.sidequest} class="badge badge-xs badge-info ml-1 align-middle">
+                      sidequest
+                    </span>
+                  </div>
+                  <div class="text-xs opacity-70 tabular-nums mt-0.5">
+                    {:erlang.float_to_binary(leg.distance_m / 1000, decimals: 2)} km · +{round(
+                      leg.elevation_gain_m
+                    )} m · {Packheavy.Trips.Helpers.format_hours(
+                      Packheavy.Trips.Helpers.leg_time_h(leg)
+                    )}
+                    <%= if leg_calories = Packheavy.Trips.Helpers.leg_calories(leg, @leader_kg, @loads) do %>
+                      · {leg_calories} kcal
+                    <% end %>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    phx-click="fly-to-leg"
+                    phx-value-id={leg.id}
+                    class="btn btn-ghost btn-xs"
+                    title="Fly the map to this leg"
+                  >
+                    Fly
+                  </button>
+                  <button
+                    type="button"
+                    phx-click="move-leg"
+                    phx-value-id={leg.id}
+                    phx-value-dir="up"
+                    class="btn btn-ghost btn-xs"
+                    disabled={day_idx == 0}
+                    title="Move up within day"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    phx-click="move-leg"
+                    phx-value-id={leg.id}
+                    phx-value-dir="down"
+                    class="btn btn-ghost btn-xs"
+                    disabled={day_idx == length(day_legs) - 1}
+                    title="Move down within day"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    phx-click="open-edit-leg"
+                    phx-value-id={leg.id}
+                    class="btn btn-ghost btn-xs"
+                    title="Edit name, day, sidequest, pace"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    phx-click="delete-leg"
+                    phx-value-id={leg.id}
+                    data-confirm={"Remove leg \"#{leg.name}\"?"}
+                    class="btn btn-ghost btn-xs text-error"
+                    title="Delete"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              <%= if leg_has_elevation?(leg) do %>
+                <div
+                  id={"leg-chart-#{leg.id}"}
+                  phx-hook="LegChart"
+                  phx-update="ignore"
+                  data-leg-id={leg.id}
+                  data-color={leg.color}
+                  data-track={Jason.encode!(leg.track)}
+                >
+                  {Phoenix.HTML.raw(leg_elevation_svg(leg))}
+                </div>
+              <% else %>
+                <p class="text-sm opacity-70">No elevation data in this GPX.</p>
+              <% end %>
               <div
-                id={"leg-chart-#{leg.id}"}
-                phx-hook="LegChart"
-                phx-update="ignore"
-                data-leg-id={leg.id}
-                data-color={leg.color}
-                data-track={Jason.encode!(leg.track)}
+                :if={leg.notes && leg.notes != ""}
+                class="markdown text-sm opacity-90 border-l-2 border-base-300 pl-3 ml-5"
               >
-                {Phoenix.HTML.raw(leg_elevation_svg(leg))}
+                {PackheavyWeb.Markdown.render(leg.notes)}
               </div>
-            <% else %>
-              <p class="text-sm opacity-70">No elevation data in this GPX.</p>
-            <% end %>
-            <div :if={leg.notes && leg.notes != ""} class="markdown text-sm opacity-90 border-l-2 border-base-300 pl-3 ml-5">
-              {PackheavyWeb.Markdown.render(leg.notes)}
             </div>
           </div>
-        </div>
         </div>
       </div>
 
       <.leg_modal :if={@leg_modal} state={@leg_modal} uploads={@uploads} days_to_show={@days_to_show} />
     </div>
-
     """
   end
 
@@ -1493,7 +1664,10 @@ defmodule PackheavyWeb.TripLive.Show do
               <input type="hidden" name="day" value={day} />
               <label class="flex flex-col gap-1">
                 <span class="text-xs opacity-70">GPX file</span>
-                <.live_file_input upload={@uploads.leg_gpx} class="file-input file-input-bordered w-full" />
+                <.live_file_input
+                  upload={@uploads.leg_gpx}
+                  class="file-input file-input-bordered w-full"
+                />
               </label>
               <div :for={entry <- @uploads.leg_gpx.entries} class="text-sm flex items-center gap-2">
                 <span>{entry.client_name}</span>
@@ -1511,12 +1685,25 @@ defmodule PackheavyWeb.TripLive.Show do
               </div>
               <label class="flex flex-col gap-1">
                 <span class="text-xs opacity-70">Name (defaults to filename)</span>
-                <input type="text" name="name" placeholder="e.g. Cradle to Waterfall Valley" class="input input-bordered input-sm w-full" />
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="e.g. Cradle to Waterfall Valley"
+                  class="input input-bordered input-sm w-full"
+                />
               </label>
               <div class="grid grid-cols-2 gap-3">
                 <label class="flex flex-col gap-1">
                   <span class="text-xs opacity-70">Pace (km/h)</span>
-                  <input type="number" name="pace_kmh" step="0.1" min="1" max="10" value="4.0" class="input input-bordered input-sm w-full tabular-nums" />
+                  <input
+                    type="number"
+                    name="pace_kmh"
+                    step="0.1"
+                    min="1"
+                    max="10"
+                    value="4.0"
+                    class="input input-bordered input-sm w-full tabular-nums"
+                  />
                 </label>
                 <label class="flex items-end gap-2 mb-1">
                   <input type="checkbox" name="sidequest" value="true" class="checkbox checkbox-sm" />
@@ -1525,37 +1712,68 @@ defmodule PackheavyWeb.TripLive.Show do
               </div>
               <label class="flex flex-col gap-1">
                 <span class="text-xs opacity-70">Notes (optional, Markdown)</span>
-                <textarea name="notes" rows="4" class="textarea textarea-bordered textarea-sm w-full font-mono text-xs" placeholder="Water at km 8, river crossing at km 12, scrambly final 200m..."></textarea>
+                <textarea
+                  name="notes"
+                  rows="4"
+                  class="textarea textarea-bordered textarea-sm w-full font-mono text-xs"
+                  placeholder="Water at km 8, river crossing at km 12, scrambly final 200m..."
+                ></textarea>
               </label>
               <div class="flex justify-end gap-2 mt-2">
-                <button type="button" phx-click="close-leg-modal" class="btn btn-ghost btn-sm">Cancel</button>
-                <button type="submit" class="btn btn-primary btn-sm" disabled={@uploads.leg_gpx.entries == []}>
+                <button type="button" phx-click="close-leg-modal" class="btn btn-ghost btn-sm">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  class="btn btn-primary btn-sm"
+                  disabled={@uploads.leg_gpx.entries == []}
+                >
                   Add leg
                 </button>
               </div>
             </form>
-
           <% %{mode: :edit, leg: leg} -> %>
             <h3 class="font-bold text-lg mb-3">Edit leg</h3>
             <form phx-submit="save-leg-edit" class="space-y-3">
               <input type="hidden" name="leg_id" value={leg.id} />
               <label class="flex flex-col gap-1">
                 <span class="text-xs opacity-70">Name</span>
-                <input type="text" name="name" value={leg.name} class="input input-bordered input-sm w-full" />
+                <input
+                  type="text"
+                  name="name"
+                  value={leg.name}
+                  class="input input-bordered input-sm w-full"
+                />
               </label>
               <div class="grid grid-cols-3 gap-3">
                 <label class="flex flex-col gap-1">
                   <span class="text-xs opacity-70">Day</span>
                   <select name="day" class="select select-bordered select-sm w-full">
-                    <option :for={n <- 1..@days_to_show} value={n} selected={n == leg.day}>Day {n}</option>
+                    <option :for={n <- 1..@days_to_show} value={n} selected={n == leg.day}>
+                      Day {n}
+                    </option>
                   </select>
                 </label>
                 <label class="flex flex-col gap-1">
                   <span class="text-xs opacity-70">Pace (km/h)</span>
-                  <input type="number" name="pace_kmh" step="0.1" min="1" max="10" value={leg.pace_kmh} class="input input-bordered input-sm w-full tabular-nums" />
+                  <input
+                    type="number"
+                    name="pace_kmh"
+                    step="0.1"
+                    min="1"
+                    max="10"
+                    value={leg.pace_kmh}
+                    class="input input-bordered input-sm w-full tabular-nums"
+                  />
                 </label>
                 <label class="flex items-end gap-2 mb-1">
-                  <input type="checkbox" name="sidequest" value="true" checked={leg.sidequest} class="checkbox checkbox-sm" />
+                  <input
+                    type="checkbox"
+                    name="sidequest"
+                    value="true"
+                    checked={leg.sidequest}
+                    class="checkbox checkbox-sm"
+                  />
                   <span class="text-sm">Sidequest</span>
                 </label>
               </div>
@@ -1564,10 +1782,17 @@ defmodule PackheavyWeb.TripLive.Show do
               </p>
               <label class="flex flex-col gap-1">
                 <span class="text-xs opacity-70">Notes (optional, Markdown)</span>
-                <textarea name="notes" rows="4" class="textarea textarea-bordered textarea-sm w-full font-mono text-xs" placeholder="Water at km 8, river crossing at km 12, scrambly final 200m...">{leg.notes}</textarea>
+                <textarea
+                  name="notes"
+                  rows="4"
+                  class="textarea textarea-bordered textarea-sm w-full font-mono text-xs"
+                  placeholder="Water at km 8, river crossing at km 12, scrambly final 200m..."
+                >{leg.notes}</textarea>
               </label>
               <div class="flex justify-end gap-2 mt-2">
-                <button type="button" phx-click="close-leg-modal" class="btn btn-ghost btn-sm">Cancel</button>
+                <button type="button" phx-click="close-leg-modal" class="btn btn-ghost btn-sm">
+                  Cancel
+                </button>
                 <button type="submit" class="btn btn-primary btn-sm">Save</button>
               </div>
             </form>
@@ -1578,7 +1803,8 @@ defmodule PackheavyWeb.TripLive.Show do
         phx-click="close-leg-modal"
         class="modal-backdrop"
         aria-label="Close"
-      ></button>
+      >
+      </button>
     </div>
     """
   end

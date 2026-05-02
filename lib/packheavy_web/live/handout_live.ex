@@ -44,7 +44,7 @@ defmodule PackheavyWeb.HandoutLive do
       assigns.trip.trip_items
       |> Enum.sort_by(fn ti ->
         item = ti.item
-        String.downcase("#{item && item.brand || ""} #{item && item.title}")
+        String.downcase("#{(item && item.brand) || ""} #{item && item.title}")
       end)
       |> Enum.group_by(fn ti ->
         case ti.item && ti.item.category_data do
@@ -171,26 +171,51 @@ defmodule PackheavyWeb.HandoutLive do
         <% loads = Map.get(totals, :loads) || Packheavy.Trips.Helpers.pack_loads(@trip) %>
         <% total_distance_m = @legs_with_color |> Enum.map(& &1.distance_m) |> Enum.sum() %>
         <% total_gain_m = @legs_with_color |> Enum.map(& &1.elevation_gain_m) |> Enum.sum() %>
-
-        <!-- Hike overview -->
+        
+    <!-- Hike overview -->
         <section :if={!empty_overview?(@trip)} class="card bg-base-200 p-4 space-y-2">
           <h2 class="font-semibold">Trip overview</h2>
           <dl class="text-sm grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
-            <div :if={@trip.area} class="sm:col-span-2"><dt class="opacity-60 inline">Area: </dt><dd class="inline">{@trip.area}</dd></div>
-            <div :if={@trip.park_url} class="sm:col-span-2"><dt class="opacity-60 inline">Park: </dt><dd class="inline"><a href={@trip.park_url} class="link link-primary break-all">{@trip.park_url}</a></dd></div>
-            <div :if={@trip.route_url} class="sm:col-span-2"><dt class="opacity-60 inline">Route: </dt><dd class="inline"><a href={@trip.route_url} class="link link-primary break-all">{@trip.route_url}</a></dd></div>
-            <div :if={@trip.departure_at}><dt class="opacity-60 inline">Depart: </dt><dd class="inline">{format_datetime(@trip.departure_at)}</dd></div>
-            <div :if={@trip.return_at}><dt class="opacity-60 inline">Return: </dt><dd class="inline">{format_datetime(@trip.return_at)}</dd></div>
-            <div :if={@trip.escalation_criteria} class="sm:col-span-2"><dt class="opacity-60">Escalation criteria:</dt><dd class="whitespace-pre-line">{@trip.escalation_criteria}</dd></div>
-            <div :if={@trip.gear_highlights} class="sm:col-span-2"><dt class="opacity-60">Gear highlights:</dt><dd class="whitespace-pre-line">{@trip.gear_highlights}</dd></div>
+            <div :if={@trip.area} class="sm:col-span-2">
+              <dt class="opacity-60 inline">Area:</dt>
+              <dd class="inline">{@trip.area}</dd>
+            </div>
+            <div :if={@trip.park_url} class="sm:col-span-2">
+              <dt class="opacity-60 inline">Park:</dt>
+              <dd class="inline">
+                <a href={@trip.park_url} class="link link-primary break-all">{@trip.park_url}</a>
+              </dd>
+            </div>
+            <div :if={@trip.route_url} class="sm:col-span-2">
+              <dt class="opacity-60 inline">Route:</dt>
+              <dd class="inline">
+                <a href={@trip.route_url} class="link link-primary break-all">{@trip.route_url}</a>
+              </dd>
+            </div>
+            <div :if={@trip.departure_at}>
+              <dt class="opacity-60 inline">Depart:</dt>
+              <dd class="inline">{format_datetime(@trip.departure_at)}</dd>
+            </div>
+            <div :if={@trip.return_at}>
+              <dt class="opacity-60 inline">Return:</dt>
+              <dd class="inline">{format_datetime(@trip.return_at)}</dd>
+            </div>
+            <div :if={@trip.escalation_criteria} class="sm:col-span-2">
+              <dt class="opacity-60">Escalation criteria:</dt>
+              <dd class="whitespace-pre-line">{@trip.escalation_criteria}</dd>
+            </div>
+            <div :if={@trip.gear_highlights} class="sm:col-span-2">
+              <dt class="opacity-60">Gear highlights:</dt>
+              <dd class="whitespace-pre-line">{@trip.gear_highlights}</dd>
+            </div>
             <div :if={@trip.notes && @trip.notes != ""} class="sm:col-span-2">
               <dt class="opacity-60">Notes:</dt>
               <dd class="markdown text-sm">{PackheavyWeb.Markdown.render(@trip.notes)}</dd>
             </div>
           </dl>
         </section>
-
-        <!-- Hikers (with private contact info) -->
+        
+    <!-- Hikers (with private contact info) -->
         <section :if={@trip.trip_hikers != []} class="card bg-base-200 p-4 space-y-2">
           <h2 class="font-semibold">Hiking group</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-sm">
@@ -203,30 +228,49 @@ defmodule PackheavyWeb.HandoutLive do
                   </span>
                   <span class="opacity-70 ml-2">
                     <span :if={h.phone}>📱 <a href={"tel:#{h.phone}"} class="link">{h.phone}</a></span>
-                    <span :if={h.satellite_sms} class="ml-2">🛰 <a href={"tel:#{h.satellite_sms}"} class="link">{h.satellite_sms}</a></span>
+                    <span :if={h.satellite_sms} class="ml-2">
+                      🛰 <a href={"tel:#{h.satellite_sms}"} class="link">{h.satellite_sms}</a>
+                    </span>
                   </span>
                   <div :if={h.plb_hex_id || h.plb_serial} class="opacity-70 mt-1 text-xs">
-                    📡 PLB<span :if={h.plb_hex_id} class="ml-1">Hex: <span class="font-mono">{h.plb_hex_id}</span></span><span :if={h.plb_serial} class="ml-2">Serial: {h.plb_serial}</span>
+                    📡 PLB<span :if={h.plb_hex_id} class="ml-1">Hex: <span class="font-mono">{h.plb_hex_id}</span></span><span
+                      :if={h.plb_serial}
+                      class="ml-2"
+                    >
+                      Serial: {h.plb_serial}
+                    </span>
                   </div>
                   <div :if={h.location_tracker_url} class="opacity-70 break-all mt-1">
-                    Tracker: <a href={h.location_tracker_url} class="link link-primary">{h.location_tracker_url}</a><span :if={h.location_tracker_password}> · "{h.location_tracker_password}"</span>
+                    Tracker:
+                    <a href={h.location_tracker_url} class="link link-primary">
+                      {h.location_tracker_url}
+                    </a><span :if={h.location_tracker_password}> · "{h.location_tracker_password}"</span>
                   </div>
-                  <span :if={h.notes} class="block opacity-70 whitespace-pre-line mt-1 text-xs">{h.notes}</span>
+                  <span :if={h.notes} class="block opacity-70 whitespace-pre-line mt-1 text-xs">
+                    {h.notes}
+                  </span>
                 </div>
               <% else %>
                 <div>
                   <div class="font-semibold">{h.name}</div>
-                  <div :if={h.phone} class="opacity-70">📱 <a href={"tel:#{h.phone}"} class="link">{h.phone}</a></div>
+                  <div :if={h.phone} class="opacity-70">
+                    📱 <a href={"tel:#{h.phone}"} class="link">{h.phone}</a>
+                  </div>
                   <div :if={h.plb_hex_id || h.plb_serial} class="opacity-70 text-xs">
-                    📡 PLB<span :if={h.plb_hex_id} class="ml-1">Hex: <span class="font-mono">{h.plb_hex_id}</span></span><span :if={h.plb_serial} class="ml-2">Serial: {h.plb_serial}</span>
+                    📡 PLB<span :if={h.plb_hex_id} class="ml-1">Hex: <span class="font-mono">{h.plb_hex_id}</span></span><span
+                      :if={h.plb_serial}
+                      class="ml-2"
+                    >
+                      Serial: {h.plb_serial}
+                    </span>
                   </div>
                 </div>
               <% end %>
             <% end %>
           </div>
         </section>
-
-        <!-- Emergency + daily check-in contacts: combined card, two columns. -->
+        
+    <!-- Emergency + daily check-in contacts: combined card, two columns. -->
         <section :if={@emergency != [] or @daily != []} class="card bg-base-200 p-4 space-y-3">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div :if={@emergency != []} class="space-y-2">
@@ -235,10 +279,16 @@ defmodule PackheavyWeb.HandoutLive do
                 <div :for={c <- Enum.sort_by(@emergency, & &1.position)}>
                   <div class="font-semibold">
                     {c.name}
-                    <span :if={c.relationship} class="opacity-60 font-normal text-xs ml-1">({c.relationship})</span>
+                    <span :if={c.relationship} class="opacity-60 font-normal text-xs ml-1">
+                      ({c.relationship})
+                    </span>
                   </div>
-                  <div :if={c.phone} class="opacity-70">📱 <a href={"tel:#{c.phone}"} class="link">{c.phone}</a></div>
-                  <div :if={c.escalation_criteria} class="opacity-70 whitespace-pre-line mt-1 text-xs">{c.escalation_criteria}</div>
+                  <div :if={c.phone} class="opacity-70">
+                    📱 <a href={"tel:#{c.phone}"} class="link">{c.phone}</a>
+                  </div>
+                  <div :if={c.escalation_criteria} class="opacity-70 whitespace-pre-line mt-1 text-xs">
+                    {c.escalation_criteria}
+                  </div>
                 </div>
               </div>
             </div>
@@ -248,16 +298,20 @@ defmodule PackheavyWeb.HandoutLive do
                 <div :for={c <- Enum.sort_by(@daily, & &1.position)}>
                   <div class="font-semibold">
                     {c.name}
-                    <span :if={c.relationship} class="opacity-60 font-normal text-xs ml-1">({c.relationship})</span>
+                    <span :if={c.relationship} class="opacity-60 font-normal text-xs ml-1">
+                      ({c.relationship})
+                    </span>
                   </div>
-                  <div :if={c.phone} class="opacity-70">📱 <a href={"tel:#{c.phone}"} class="link">{c.phone}</a></div>
+                  <div :if={c.phone} class="opacity-70">
+                    📱 <a href={"tel:#{c.phone}"} class="link">{c.phone}</a>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </section>
-
-        <!-- Headline numbers, sat above the route so the reader has
+        
+    <!-- Headline numbers, sat above the route so the reader has
              distance/elevation/calories/pack-weight context immediately
              before scrolling into the per-leg details. In print we
              force a fresh page here so the tile row + the route map
@@ -275,12 +329,20 @@ defmodule PackheavyWeb.HandoutLive do
           </div>
           <div :if={@has_legs? && time_h} class="card bg-base-200 p-3">
             <div class="text-xs opacity-70">Walking time</div>
-            <div class="text-lg font-semibold tabular-nums">{Packheavy.Trips.Helpers.format_hours(time_h)}</div>
+            <div class="text-lg font-semibold tabular-nums">
+              {Packheavy.Trips.Helpers.format_hours(time_h)}
+            </div>
           </div>
           <div class="card bg-base-200 p-3">
             <div class="text-xs opacity-70">Pack weight</div>
-            <div class="text-lg font-semibold tabular-nums">{:erlang.float_to_binary(loads.full_kg, decimals: 2)} kg</div>
-            <div :if={loads.sidequest_kg > 0} class="text-xs opacity-50 tabular-nums" title="Worn + day-pack only">
+            <div class="text-lg font-semibold tabular-nums">
+              {:erlang.float_to_binary(loads.full_kg, decimals: 2)} kg
+            </div>
+            <div
+              :if={loads.sidequest_kg > 0}
+              class="text-xs opacity-50 tabular-nums"
+              title="Worn + day-pack only"
+            >
               sidequest: {:erlang.float_to_binary(loads.sidequest_kg, decimals: 2)} kg
             </div>
           </div>
@@ -299,8 +361,8 @@ defmodule PackheavyWeb.HandoutLive do
             <div class="text-xs opacity-50">camp/sleep BMR</div>
           </div>
         </div>
-
-        <!-- Route -->
+        
+    <!-- Route -->
         <section :if={@has_legs?} class="card bg-base-200 p-4 space-y-4">
           <h2 class="font-semibold">Route</h2>
           <div
@@ -313,45 +375,77 @@ defmodule PackheavyWeb.HandoutLive do
           </div>
 
           <div class="space-y-6">
-            <div :for={{day, day_legs} <- @legs_by_day} class="border-t-2 border-base-300 pt-3 first:border-t-0 first:pt-0">
+            <div
+              :for={{day, day_legs} <- @legs_by_day}
+              class="border-t-2 border-base-300 pt-3 first:border-t-0 first:pt-0"
+            >
               <div class="flex items-baseline gap-3 flex-wrap mb-2 print:break-after-avoid">
                 <h3 class="text-base font-bold uppercase tracking-wide">
-                  Day {day}<span :if={date = day_date(@trip, day)} class="opacity-70 font-semibold normal-case ml-2 text-sm">{date}</span>
+                  Day {day}<span
+                    :if={date = day_date(@trip, day)}
+                    class="opacity-70 font-semibold normal-case ml-2 text-sm"
+                  >{date}</span>
                 </h3>
                 <span :if={day_legs != []} class="text-sm opacity-70 tabular-nums">
                   {day_summary(day_legs)}
                 </span>
+                <span
+                  :if={sun = Packheavy.Trips.Helpers.day_sun(@trip, day)}
+                  class="text-sm opacity-70 tabular-nums"
+                >
+                  ☀ {Packheavy.Trips.Helpers.format_clock(sun.sunrise)}–{Packheavy.Trips.Helpers.format_clock(
+                    sun.sunset
+                  )} · {Packheavy.Trips.Helpers.format_hours(sun.daylight_h)} daylight
+                </span>
                 <span :if={day_legs == []} class="text-xs opacity-50 italic">no legs</span>
               </div>
 
-              <div :for={leg <- day_legs} class="card bg-base-100 p-3 mb-2 space-y-2 print:break-inside-avoid">
+              <div
+                :for={leg <- day_legs}
+                class="card bg-base-100 p-3 mb-2 space-y-2 print:break-inside-avoid"
+              >
                 <div class="flex items-start gap-2">
-                  <span class="inline-block w-3 h-3 rounded-sm shrink-0 mt-1.5" style={"background-color: #{leg.color}"}></span>
+                  <span
+                    class="inline-block w-3 h-3 rounded-sm shrink-0 mt-1.5"
+                    style={"background-color: #{leg.color}"}
+                  >
+                  </span>
                   <div class="flex-1 min-w-0">
                     <div class="text-sm font-semibold break-words">
                       {leg.name}
-                      <span :if={leg.sidequest} class="badge badge-xs badge-info ml-1 align-middle">sidequest</span>
+                      <span :if={leg.sidequest} class="badge badge-xs badge-info ml-1 align-middle">
+                        sidequest
+                      </span>
                     </div>
                     <div class="text-xs opacity-70 tabular-nums mt-0.5">
-                      {:erlang.float_to_binary(leg.distance_m / 1000, decimals: 2)} km · +{round(leg.elevation_gain_m)} m · {Packheavy.Trips.Helpers.format_hours(Packheavy.Trips.Helpers.leg_time_h(leg))}
+                      {:erlang.float_to_binary(leg.distance_m / 1000, decimals: 2)} km · +{round(
+                        leg.elevation_gain_m
+                      )} m · {Packheavy.Trips.Helpers.format_hours(
+                        Packheavy.Trips.Helpers.leg_time_h(leg)
+                      )}
                     </div>
                   </div>
                 </div>
-                <div :if={leg.notes && leg.notes != ""} class="markdown text-sm opacity-90 border-l-2 border-base-300 pl-3 ml-5">
+                <div
+                  :if={leg.notes && leg.notes != ""}
+                  class="markdown text-sm opacity-90 border-l-2 border-base-300 pl-3 ml-5"
+                >
                   {PackheavyWeb.Markdown.render(leg.notes)}
                 </div>
               </div>
             </div>
           </div>
         </section>
-
-        <!-- Pack -->
+        
+    <!-- Pack -->
         <section class="card bg-base-200 p-4 space-y-4">
           <h2 class="font-semibold">Pack</h2>
 
           <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
             <div class="space-y-1">
-              <h3 class="text-xs font-semibold opacity-70 uppercase tracking-wide">Weight breakdown</h3>
+              <h3 class="text-xs font-semibold opacity-70 uppercase tracking-wide">
+                Weight breakdown
+              </h3>
               <TripShow.weight_breakdown trip={@trip} />
             </div>
             <div class="space-y-1">
@@ -359,15 +453,25 @@ defmodule PackheavyWeb.HandoutLive do
               <div class="grid grid-cols-3 gap-2">
                 <div class="card bg-base-100 p-3">
                   <div class="text-xs opacity-70">Worn</div>
-                  <div class="text-lg font-semibold tabular-nums">{:erlang.float_to_binary((loads.by_carry.worn + loads.water_by_carry.worn) / 1000, decimals: 2)} kg</div>
+                  <div class="text-lg font-semibold tabular-nums">
+                    {:erlang.float_to_binary((loads.by_carry.worn + loads.water_by_carry.worn) / 1000,
+                      decimals: 2
+                    )} kg
+                  </div>
                 </div>
                 <div class="card bg-base-100 p-3">
                   <div class="text-xs opacity-70">Day pack</div>
-                  <div class="text-lg font-semibold tabular-nums">{:erlang.float_to_binary((loads.by_carry.day_pack + loads.water_by_carry.day_pack) / 1000, decimals: 2)} kg</div>
+                  <div class="text-lg font-semibold tabular-nums">
+                    {:erlang.float_to_binary(
+                      (loads.by_carry.day_pack + loads.water_by_carry.day_pack) / 1000, decimals: 2)} kg
+                  </div>
                 </div>
                 <div class="card bg-base-100 p-3">
                   <div class="text-xs opacity-70">Main pack</div>
-                  <div class="text-lg font-semibold tabular-nums">{:erlang.float_to_binary((loads.by_carry.main_pack + loads.water_by_carry.main_pack) / 1000, decimals: 2)} kg</div>
+                  <div class="text-lg font-semibold tabular-nums">
+                    {:erlang.float_to_binary(
+                      (loads.by_carry.main_pack + loads.water_by_carry.main_pack) / 1000, decimals: 2)} kg
+                  </div>
                 </div>
               </div>
             </div>
@@ -381,7 +485,11 @@ defmodule PackheavyWeb.HandoutLive do
                 <div class="flex justify-between items-baseline border-b border-success pb-0.5 mb-1">
                   <h3 class="text-success text-xs font-bold uppercase tracking-wide">{label}</h3>
                   <span class="text-success text-xs tabular-nums opacity-80">
-                    <span :if={cap = @section_capacity.(cat)} class="mr-2">Σ {TripShow.format_capacity(cap)}L</span><span :if={kcal = @section_calories.(cat)} class="mr-2">Σ {kcal}kcal<%= if cat == :food && food_g > 0 do %> · avg {:erlang.float_to_binary(calories / food_g, decimals: 1)} kcal/g<% end %></span>{@section_weight.(cat)}g
+                    <span :if={cap = @section_capacity.(cat)} class="mr-2">
+                      Σ {TripShow.format_capacity(cap)}L
+                    </span><span :if={kcal = @section_calories.(cat)} class="mr-2">Σ {kcal}kcal<%= if cat == :food && food_g > 0 do %> · avg {:erlang.float_to_binary(calories / food_g, decimals: 1)} kcal/g<% end %></span>{@section_weight.(
+                      cat
+                    )}g
                   </span>
                 </div>
                 <ul class="divide-y divide-base-300">
@@ -390,13 +498,20 @@ defmodule PackheavyWeb.HandoutLive do
                     class="grid grid-cols-[1fr_3rem_4.5rem_5rem_3.5rem_5.5rem] items-center gap-2 py-2 px-1 text-sm"
                   >
                     <span class="min-w-0 truncate">
-                      <span :if={ti.item.brand} class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom">{ti.item.brand}</span>{ti.item.title}
+                      <span
+                        :if={ti.item.brand}
+                        class="opacity-60 mr-1 inline-block max-w-[7rem] sm:max-w-none truncate align-bottom"
+                      >{ti.item.brand}</span>{ti.item.title}
                     </span>
                     <span class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">
-                      <%= if cap = TripShow.pack_capacity(ti) do %>{TripShow.format_capacity(cap)}L<% end %>
+                      <%= if cap = TripShow.pack_capacity(ti) do %>
+                        {TripShow.format_capacity(cap)}L
+                      <% end %>
                     </span>
                     <span class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">
-                      <%= if kcal = TripShow.food_calories(ti) do %>{kcal}kcal<% end %>
+                      <%= if kcal = TripShow.food_calories(ti) do %>
+                        {kcal}kcal
+                      <% end %>
                     </span>
                     <span class="opacity-60 text-xs tabular-nums text-right whitespace-nowrap">
                       <%= if ti.qty > 1 do %>
@@ -408,7 +523,9 @@ defmodule PackheavyWeb.HandoutLive do
                     <span class="opacity-60 text-xs tabular-nums text-right">
                       {(ti.item.weight_g || 0) * ti.qty}g
                     </span>
-                    <span class="badge badge-ghost badge-xs whitespace-nowrap justify-self-center">{TripShow.carry_mode_label(ti.carry_mode)}</span>
+                    <span class="badge badge-ghost badge-xs whitespace-nowrap justify-self-center">
+                      {TripShow.carry_mode_label(ti.carry_mode)}
+                    </span>
                   </li>
                 </ul>
               </section>

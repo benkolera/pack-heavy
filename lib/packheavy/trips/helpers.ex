@@ -205,6 +205,80 @@ defmodule Packheavy.Trips.Helpers do
     end
   end
 
+  # ---- Sunrise / sunset / daylight per day ----------------------------
+  #
+  # Uses the `astro` library to compute sunrise & sunset for a
+  # representative lat/lon on the day (the first trackpoint of the
+  # day's first leg). Hardcoded `Australia/Hobart` as the timezone for
+  # now since every trip is in Tassie — flip to a per-trip attr or a
+  # tz_world resolver if that ever stops being true.
+
+  @default_tz "Australia/Hobart"
+
+  @doc false
+  def tz_resolver(_location), do: {:ok, @default_tz}
+
+  @doc """
+  Sunrise, sunset and daylight hours for a given day of the trip
+  (1-indexed, where day 1 is `trip.start_date`). Returns `nil` if the
+  trip has no start date or no leg with a usable trackpoint that day
+  (or any leg, falling back to the trip's first leg).
+  """
+  def day_sun(%{start_date: %Date{} = start_date} = trip, day)
+      when is_integer(day) and day >= 1 do
+    date = Date.add(start_date, day - 1)
+    opts = [time_zone_resolver: &__MODULE__.tz_resolver/1]
+
+    case day_coord(trip, day) do
+      {lng, lat} ->
+        with {:ok, sunrise} <- Astro.sunrise({lng, lat}, date, opts),
+             {:ok, sunset} <- Astro.sunset({lng, lat}, date, opts) do
+          %{
+            sunrise: sunrise,
+            sunset: sunset,
+            daylight_h: DateTime.diff(sunset, sunrise, :second) / 3600.0
+          }
+        else
+          _ -> nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  def day_sun(_, _), do: nil
+
+  defp day_coord(%{trip_legs: legs}, day) when is_list(legs) do
+    leg =
+      legs
+      |> Enum.filter(&(&1.day == day))
+      |> Enum.sort_by(& &1.position)
+      |> List.first()
+
+    case leg || List.first(legs || []) do
+      %{track: track} -> first_track_coord(track)
+      _ -> nil
+    end
+  end
+
+  defp day_coord(_, _), do: nil
+
+  defp first_track_coord([%{} = first | _]) do
+    lat = Map.get(first, :lat) || Map.get(first, "lat")
+    lng = Map.get(first, :lon) || Map.get(first, "lon")
+    if is_number(lat) and is_number(lng), do: {lng, lat}, else: nil
+  end
+
+  defp first_track_coord(_), do: nil
+
+  @doc """
+  Format a `DateTime` as `\"HH:MM\"` for compact display next to
+  walking-time estimates on the day header.
+  """
+  def format_clock(%DateTime{} = dt), do: Calendar.strftime(dt, "%H:%M")
+  def format_clock(_), do: "—"
+
   @doc """
   Pack loads in kg based on per-item `carry_mode`. Returns
   `%{full_kg, sidequest_kg, by_carry: %{worn, day_pack, main_pack}}`.
@@ -256,7 +330,13 @@ defmodule Packheavy.Trips.Helpers do
     }
   end
 
-  def pack_loads(_), do: %{full_kg: 0.0, sidequest_kg: 0.0, by_carry: %{worn: 0, day_pack: 0, main_pack: 0}, water_by_carry: %{worn: 0, day_pack: 0, main_pack: 0}}
+  def pack_loads(_),
+    do: %{
+      full_kg: 0.0,
+      sidequest_kg: 0.0,
+      by_carry: %{worn: 0, day_pack: 0, main_pack: 0},
+      water_by_carry: %{worn: 0, day_pack: 0, main_pack: 0}
+    }
 
   defp unwrap(%Ash.Union{value: v}), do: v
   defp unwrap(other), do: other
