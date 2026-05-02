@@ -104,6 +104,11 @@ if config_env() == :prod do
       # for details about using IPv6 vs IPv4 and loopback vs public addresses.
       ip: {0, 0, 0, 0, 0, 0, 0, 0}
     ],
+    # Explicit Origin whitelist for the LiveView WS upgrade. Phoenix's
+    # default `check_origin: true` derives from `url:` and can drift
+    # behind an ALB (`https://host:443` vs `https://host` mismatches),
+    # which silently rejects the upgrade and falls back to long-poll.
+    check_origin: ["https://#{host}"],
     secret_key_base: secret_key_base
 
   config :packheavy,
