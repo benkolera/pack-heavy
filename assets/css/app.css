@@ -150,9 +150,17 @@
   main { padding: 0 !important; }
   main > div { max-width: 100% !important; }
 
-  /* Section headings keep with their list, no breaks mid-row */
-  section { break-inside: avoid; page-break-inside: avoid; }
+  /* Don't break mid-row inside list items, but allow tall sections
+     (e.g. the Trip overview with embedded markdown headings/lists) to
+     flow across pages — otherwise a tall section pushes itself to the
+     next page and the previous one is left half-empty. */
   li { break-inside: avoid; page-break-inside: avoid; }
+  /* Keep headings glued to the content that follows them. */
+  h2, h3 { break-after: avoid; page-break-after: avoid; }
+
+  /* Tighten the summary tile grid: less padding so the row of tiles
+     takes less vertical space at the top of the handout. */
+  .summary-card { padding: 0.5rem !important; }
 
   /* Borders/dividers print clearly */
   ul.divide-y > li { border-bottom: 1px solid #ccc !important; }

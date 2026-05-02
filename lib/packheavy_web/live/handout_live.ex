@@ -172,7 +172,7 @@ defmodule PackheavyWeb.HandoutLive do
         <% total_distance_m = @legs_with_color |> Enum.map(& &1.distance_m) |> Enum.sum() %>
         <% total_gain_m = @legs_with_color |> Enum.map(& &1.elevation_gain_m) |> Enum.sum() %>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 print:grid-cols-4 gap-2">
           <div :if={@has_legs?} class="card bg-base-200 p-3">
             <div class="text-xs opacity-70">Distance</div>
             <div class="text-lg font-semibold tabular-nums">
