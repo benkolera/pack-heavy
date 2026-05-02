@@ -128,6 +128,15 @@ export default {
   drawLegs(legs) {
     if (!this._map) return
 
+    // Per-day handout maps mark themselves with data-day so a single
+    // route:legs-updated event broadcast can populate every map on the
+    // page from one payload. Planner / public maps have no data-day
+    // and render every leg.
+    const dayFilter = this.el.dataset.day
+    if (dayFilter !== undefined && dayFilter !== "") {
+      legs = legs.filter((l) => String(l.day) === dayFilter)
+    }
+
     this._polylines.forEach(({ polyline }) => polyline.remove())
     this._polylines = []
 

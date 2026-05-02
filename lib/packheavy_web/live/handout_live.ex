@@ -56,6 +56,7 @@ defmodule PackheavyWeb.HandoutLive do
         %{
           id: leg.id,
           name: leg.name,
+          day: leg.day,
           color: Enum.at(palette, rem(idx, length(palette))),
           track: Packheavy.Trips.Helpers.slim_track_for_map(leg.track)
         }
@@ -392,18 +393,11 @@ defmodule PackheavyWeb.HandoutLive do
     <!-- Route -->
         <section :if={@has_legs?} class="card bg-base-200 p-4 space-y-4">
           <h2 class="font-semibold">Route</h2>
-          <div
-            id="handout-route-map"
-            phx-hook="RouteMap"
-            phx-update="ignore"
-            class="w-full h-[500px] print:h-[400px] rounded print:break-inside-avoid"
-          >
-          </div>
 
           <div class="space-y-6">
             <div
               :for={{day, day_legs} <- @legs_by_day}
-              class="border-t-2 border-base-300 pt-3 first:border-t-0 first:pt-0"
+              class="border-t-2 border-base-300 pt-3 first:border-t-0 first:pt-0 print:break-inside-avoid"
             >
               <div class="flex items-baseline gap-3 flex-wrap mb-2 print:break-after-avoid">
                 <h3 class="text-base font-bold uppercase tracking-wide">
@@ -433,6 +427,16 @@ defmodule PackheavyWeb.HandoutLive do
                   {weather}
                 </span>
                 <span :if={day_legs == []} class="text-xs opacity-50 italic">no legs</span>
+              </div>
+
+              <div
+                :if={day_legs != []}
+                id={"handout-route-map-day-#{day}"}
+                data-day={day}
+                phx-hook="RouteMap"
+                phx-update="ignore"
+                class="w-full h-[320px] print:h-[260px] rounded mb-2 print:break-inside-avoid"
+              >
               </div>
 
               <div
