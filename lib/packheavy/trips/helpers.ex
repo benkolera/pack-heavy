@@ -78,11 +78,22 @@ defmodule Packheavy.Trips.Helpers do
 
   # ---- Per-leg pace / time / calorie estimates --------------------------
   #
-  # Naismith-with-load. Time = distance/pace + elevation/600. Calories
-  # use a load-and-grade-tuned MET × weight × time. Per-leg so the
-  # walker can dial in pace independently for each day of a multi-day
-  # trip — flat boardwalk vs. scrambly pass — and see the time impact
-  # immediately.
+  # Time = Naismith with load: distance/pace + elevation/600. Calories
+  # use the Pandolf load-carriage equation (1977), which gives the
+  # metabolic rate in watts as a function of body weight, load, walking
+  # speed, grade, and a terrain factor. We hardcode η=1.2 for trail
+  # walking (light brush / well-formed dirt) — could be exposed per leg
+  # later for sand/snow/bog if it ever matters. The MET × time formula
+  # we used previously over-reported by ~3× because hiking-MET tables
+  # assume a 5 km/h pace, while our Naismith-derived pace on real
+  # alpine trips ends up closer to 2.5 km/h.
+
+  # 1 W·h = 3600 J ; 1 kcal = 4184 J. So 1 W sustained for an hour is
+  # 3600/4184 ≈ 0.8604 kcal.
+  @watts_to_kcal_per_h 0.8604
+  # Pandolf terrain factor for trail walking (light brush / well-formed
+  # dirt). Pavement is 1.0, loose sand 2.1, soft snow ~1.6, swamp ~1.8.
+  @pandolf_eta 1.2
 
   @doc "Estimated walking time for a leg in hours. Returns nil if pace is missing or zero."
   def leg_time_h(%{distance_m: d_m, elevation_gain_m: e_m, pace_kmh: pace})
@@ -116,33 +127,27 @@ defmodule Packheavy.Trips.Helpers do
 
   def leg_calories(_, _, _), do: nil
 
-  defp leg_calories_with_load(leg, leader_kg, load_kg) do
+  defp leg_calories_with_load(%{distance_m: d_m} = leg, leader_kg, load_kg)
+       when is_number(d_m) and d_m > 0 do
     with t when is_number(t) and t > 0 <- leg_time_h(leg) do
-      base_met =
-        cond do
-          load_kg < 9 -> 7.0
-          load_kg < 19 -> 7.5
-          load_kg < 29 -> 8.0
-          true -> 8.5
-        end
+      w = decimal_to_float(leader_kg)
+      l = load_kg * 1.0
+      v_mps = d_m / (t * 3600.0)
+      g_pct = leg_grade_pct(leg)
 
-      grade_pct = leg_grade_pct(leg)
+      m_watts =
+        1.5 * w +
+          2.0 * (w + l) * :math.pow(l / w, 2) +
+          @pandolf_eta * (w + l) *
+            (1.5 * :math.pow(v_mps, 2) + 0.35 * v_mps * g_pct)
 
-      grade_bonus =
-        cond do
-          grade_pct < 3 -> 0.0
-          grade_pct < 6 -> 0.5
-          grade_pct < 10 -> 1.0
-          grade_pct < 15 -> 1.5
-          true -> 2.0
-        end
-
-      hiker_kg = decimal_to_float(leader_kg)
-      round((base_met + grade_bonus) * hiker_kg * t)
+      round(m_watts * t * @watts_to_kcal_per_h)
     else
       _ -> nil
     end
   end
+
+  defp leg_calories_with_load(_, _, _), do: nil
 
   @doc "Sum of `leg_time_h` across all legs. nil if no legs."
   def trip_time_h(%{trip_legs: legs}) when is_list(legs) and legs != [] do
