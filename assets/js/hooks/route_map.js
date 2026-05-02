@@ -30,15 +30,35 @@ function loadLeaflet() {
 }
 
 export default {
-  async mounted() {
+  mounted() {
     this._polylines = []
+    this._pendingLegs = null
+    this._pendingFly = null
 
+    // Register LiveView event handlers SYNCHRONOUSLY up front, before
+    // the async Leaflet load. The server fires `route:legs-updated`
+    // immediately after mount; if Leaflet hasn't finished loading by
+    // then there's no map to draw to yet. Buffer the payload and
+    // replay it once the map is ready.
+    this.handleEvent("route:legs-updated", ({ legs }) => {
+      if (this._map) this.drawLegs(legs)
+      else this._pendingLegs = legs
+    })
+
+    this.handleEvent("gpx:fly", ({ leg_id }) => {
+      if (this._map) this._flyToLeg(leg_id)
+      else this._pendingFly = leg_id
+    })
+
+    this._setupMap()
+  },
+  async _setupMap() {
     await loadLeaflet()
 
     // Initialise the map with a placeholder centre. The actual leg
-    // tracks arrive via the `route:legs-updated` push_event after
-    // mount, which keeps the (potentially hundreds of KB) GPX
-    // payload out of the initial LiveView phx_reply.
+    // tracks arrive via the `route:legs-updated` push_event handler
+    // registered above, which keeps the GPX payload out of the
+    // initial LiveView phx_reply.
     const map = L.map(this.el).setView([0, 0], 2)
     L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
       maxZoom: 17,
@@ -77,29 +97,33 @@ export default {
     }
     window.addEventListener("gpx:hover", this._handleHover)
 
-    this.handleEvent("gpx:fly", ({ leg_id }) => {
-      const entry = this._polylines.find((p) => p.leg.id === leg_id)
-      if (!entry) return
-      // Compute fresh bounds from the source track. Reusing
-      // `polyline.getBounds()` was returning the full-route bounds for
-      // the first leg because drawLegs aliases its bounds object into
-      // `combinedBounds` and then mutates it via `.extend()`.
-      const latlngs = entry.leg.track.map((p) => [p.lat, p.lon])
-      this._map.flyToBounds(L.latLngBounds(latlngs), { padding: [20, 20] })
+    if (this._pendingLegs) {
+      this.drawLegs(this._pendingLegs)
+      this._pendingLegs = null
+    }
+    if (this._pendingFly) {
+      this._flyToLeg(this._pendingFly)
+      this._pendingFly = null
+    }
+  },
+  _flyToLeg(legId) {
+    const entry = this._polylines.find((p) => p.leg.id === legId)
+    if (!entry) return
+    // Compute fresh bounds from the source track. Reusing
+    // `polyline.getBounds()` was returning the full-route bounds for
+    // the first leg because drawLegs aliases its bounds object into
+    // `combinedBounds` and then mutates it via `.extend()`.
+    const latlngs = entry.leg.track.map((p) => [p.lat, p.lon])
+    this._map.flyToBounds(L.latLngBounds(latlngs), { padding: [20, 20] })
 
-      // On narrow viewports the map sits above the legs list, so a Fly
-      // click leaves the user staring at the leg row they just tapped.
-      // Scroll the map into view so the result of the click is visible.
-      // Skipped on viewports wide enough for the side-by-side layout
-      // (lg = 1024 px) where the map is already on screen.
-      if (window.innerWidth < 1024) {
-        this.el.scrollIntoView({ behavior: "smooth", block: "start" })
-      }
-    })
-
-    this.handleEvent("route:legs-updated", ({ legs }) => {
-      this.drawLegs(legs)
-    })
+    // On narrow viewports the map sits above the legs list, so a Fly
+    // click leaves the user staring at the leg row they just tapped.
+    // Scroll the map into view so the result of the click is visible.
+    // Skipped on viewports wide enough for the side-by-side layout
+    // (lg = 1024 px) where the map is already on screen.
+    if (window.innerWidth < 1024) {
+      this.el.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
   },
   drawLegs(legs) {
     if (!this._map) return
