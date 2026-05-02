@@ -346,7 +346,7 @@ defmodule PackheavyWeb.PublicTripLive do
                         {Phoenix.HTML.raw(leg_elevation_svg(leg))}
                       </div>
                     <% end %>
-                    <div :if={leg.notes && leg.notes != ""} class="markdown text-sm opacity-90 border-t border-base-300 pt-2">
+                    <div :if={leg.notes && leg.notes != ""} class="markdown text-sm opacity-90 border-l-2 border-base-300 pl-3 ml-5">
                       {PackheavyWeb.Markdown.render(leg.notes)}
                     </div>
                   </div>
