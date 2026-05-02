@@ -31,8 +31,12 @@ defmodule PackheavyWeb.TripLive.Show do
         max_file_size: 50_000_000
       )
       |> reload()
+      |> assign(:weather_by_day, %{})
 
-    if connected?(socket), do: send(self(), :push_track_data)
+    if connected?(socket) do
+      send(self(), :push_track_data)
+      send(self(), :load_weather)
+    end
 
     {:ok, assign(socket, :editing_details?, false)}
   end
@@ -454,6 +458,11 @@ defmodule PackheavyWeb.TripLive.Show do
     {:noreply, push_track_data(socket)}
   end
 
+  def handle_info(:load_weather, socket) do
+    {:noreply,
+     assign(socket, :weather_by_day, Packheavy.Weather.trip_forecast(socket.assigns.trip))}
+  end
+
   def handle_info({:item_picker_confirm, "trip-item-picker", selected}, socket) do
     user = socket.assigns.current_user
     trip_id = socket.assigns.trip_id
@@ -598,7 +607,12 @@ defmodule PackheavyWeb.TripLive.Show do
 
       <%= case @tab do %>
         <% :route -> %>
-          <.route_tab trip={@trip} uploads={@uploads} leg_modal={@leg_modal} />
+          <.route_tab
+            trip={@trip}
+            uploads={@uploads}
+            leg_modal={@leg_modal}
+            weather_by_day={@weather_by_day}
+          />
         <% :plan -> %>
           <.plan_tab trip={@trip} items={@items} kits={@kits} />
         <% :pack -> %>
@@ -1405,6 +1419,7 @@ defmodule PackheavyWeb.TripLive.Show do
   attr :trip, :any, required: true
   attr :uploads, :any, required: true
   attr :leg_modal, :any, default: nil
+  attr :weather_by_day, :map, default: %{}
 
   defp route_tab(assigns) do
     palette = leg_palette()
@@ -1539,6 +1554,15 @@ defmodule PackheavyWeb.TripLive.Show do
                 ☀ {Packheavy.Trips.Helpers.format_clock(sun.sunrise)}–{Packheavy.Trips.Helpers.format_clock(
                   sun.sunset
                 )} · {Packheavy.Trips.Helpers.format_hours(sun.daylight_h)} daylight
+              </span>
+              <span
+                :if={
+                  weather =
+                    Packheavy.Weather.format_forecast(Map.get(@weather_by_day, day))
+                }
+                class="text-xs opacity-60 tabular-nums"
+              >
+                {weather}
               </span>
               <span :if={day_legs == []} class="text-xs opacity-50 italic">no legs yet</span>
               <button

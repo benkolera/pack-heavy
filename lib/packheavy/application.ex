@@ -7,6 +7,8 @@ defmodule Packheavy.Application do
 
   @impl true
   def start(_type, _args) do
+    Packheavy.Weather.init_cache()
+
     children = [
       PackheavyWeb.Telemetry,
       Packheavy.Repo,

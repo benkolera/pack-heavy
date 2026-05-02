@@ -32,12 +32,16 @@ defmodule PackheavyWeb.HandoutLive do
         ]
       )
 
-    if connected?(socket), do: send(self(), :push_track_data)
+    if connected?(socket) do
+      send(self(), :push_track_data)
+      send(self(), :load_weather)
+    end
 
     {:ok,
      socket
      |> assign(:page_title, "Packheavy: #{trip.name} — handout")
-     |> assign(:trip, trip)}
+     |> assign(:trip, trip)
+     |> assign(:weather_by_day, %{})}
   end
 
   @impl true
@@ -58,6 +62,11 @@ defmodule PackheavyWeb.HandoutLive do
       end)
 
     {:noreply, push_event(socket, "route:legs-updated", %{legs: legs_payload})}
+  end
+
+  def handle_info(:load_weather, socket) do
+    {:noreply,
+     assign(socket, :weather_by_day, Packheavy.Weather.trip_forecast(socket.assigns.trip))}
   end
 
   @impl true
@@ -409,6 +418,15 @@ defmodule PackheavyWeb.HandoutLive do
                   ☀ {Packheavy.Trips.Helpers.format_clock(sun.sunrise)}–{Packheavy.Trips.Helpers.format_clock(
                     sun.sunset
                   )} · {Packheavy.Trips.Helpers.format_hours(sun.daylight_h)} daylight
+                </span>
+                <span
+                  :if={
+                    weather =
+                      Packheavy.Weather.format_forecast(Map.get(@weather_by_day, day))
+                  }
+                  class="text-sm opacity-70 tabular-nums"
+                >
+                  {weather}
                 </span>
                 <span :if={day_legs == []} class="text-xs opacity-50 italic">no legs</span>
               </div>

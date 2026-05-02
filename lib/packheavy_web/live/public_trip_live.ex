@@ -45,12 +45,16 @@ defmodule PackheavyWeb.PublicTripLive do
             authorize?: false
           )
 
-        if connected?(socket), do: send(self(), :push_track_data)
+        if connected?(socket) do
+          send(self(), :push_track_data)
+          send(self(), :load_weather)
+        end
 
         {:ok,
          socket
          |> assign(:page_title, "#{trip.name} · packheavy")
          |> assign(:trip, trip)
+         |> assign(:weather_by_day, %{})
          |> assign(:og, build_og(trip, token))}
 
       {:error, _} ->
@@ -138,6 +142,11 @@ defmodule PackheavyWeb.PublicTripLive do
      socket
      |> push_event("route:legs-updated", %{legs: legs_payload})
      |> push_event("chart:tracks", %{tracks: chart_tracks})}
+  end
+
+  def handle_info(:load_weather, socket) do
+    {:noreply,
+     assign(socket, :weather_by_day, Packheavy.Weather.trip_forecast(socket.assigns.trip))}
   end
 
   @impl true
@@ -348,6 +357,15 @@ defmodule PackheavyWeb.PublicTripLive do
                       ☀ {Packheavy.Trips.Helpers.format_clock(sun.sunrise)}–{Packheavy.Trips.Helpers.format_clock(
                         sun.sunset
                       )} · {Packheavy.Trips.Helpers.format_hours(sun.daylight_h)} daylight
+                    </span>
+                    <span
+                      :if={
+                        weather =
+                          Packheavy.Weather.format_forecast(Map.get(@weather_by_day, day))
+                      }
+                      class="text-xs opacity-60 tabular-nums"
+                    >
+                      {weather}
                     </span>
                     <span :if={day_legs == []} class="text-xs opacity-50 italic">no legs</span>
                   </div>
