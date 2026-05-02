@@ -162,6 +162,11 @@
      takes less vertical space at the top of the handout. */
   .summary-card { padding: 0.5rem !important; }
 
+  /* daisyUI's --color-base-300 prints faintly. Force a darker grey so
+     the day-section horizontal dividers in the handout actually read
+     as a separator on paper. */
+  .border-base-300 { border-color: #b8b8b8 !important; }
+
   /* Borders/dividers print clearly */
   ul.divide-y > li { border-bottom: 1px solid #ccc !important; }
 

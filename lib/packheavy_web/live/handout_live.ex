@@ -312,23 +312,23 @@ defmodule PackheavyWeb.HandoutLive do
           >
           </div>
 
-          <div class="space-y-4">
-            <div :for={{day, day_legs} <- @legs_by_day}>
-              <div class="flex items-baseline gap-3 flex-wrap mb-1">
-                <h3 class="text-sm font-bold uppercase tracking-wide opacity-80">
-                  Day {day}<span :if={date = day_date(@trip, day)} class="opacity-60 font-normal normal-case ml-2">{date}</span>
+          <div class="space-y-6">
+            <div :for={{day, day_legs} <- @legs_by_day} class="border-t-2 border-base-300 pt-3 first:border-t-0 first:pt-0">
+              <div class="flex items-baseline gap-3 flex-wrap mb-2 print:break-after-avoid">
+                <h3 class="text-base font-bold uppercase tracking-wide">
+                  Day {day}<span :if={date = day_date(@trip, day)} class="opacity-70 font-semibold normal-case ml-2 text-sm">{date}</span>
                 </h3>
-                <span :if={day_legs != []} class="text-xs opacity-60 tabular-nums">
+                <span :if={day_legs != []} class="text-sm opacity-70 tabular-nums">
                   {day_summary(day_legs)}
                 </span>
                 <span :if={day_legs == []} class="text-xs opacity-50 italic">no legs</span>
               </div>
 
-              <div :for={leg <- day_legs} class="card bg-base-100 p-3 mb-2 space-y-2">
+              <div :for={leg <- day_legs} class="card bg-base-100 p-3 mb-2 space-y-2 print:break-inside-avoid">
                 <div class="flex items-start gap-2">
                   <span class="inline-block w-3 h-3 rounded-sm shrink-0 mt-1.5" style={"background-color: #{leg.color}"}></span>
                   <div class="flex-1 min-w-0">
-                    <div class="font-semibold break-words">
+                    <div class="text-sm font-semibold break-words">
                       {leg.name}
                       <span :if={leg.sidequest} class="badge badge-xs badge-info ml-1 align-middle">sidequest</span>
                     </div>
