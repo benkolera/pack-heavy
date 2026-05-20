@@ -6,10 +6,39 @@
 
 ## Status / scope
 
-- **Single-user, local-only.** `priv/scripts/create_user.exs` seeds a hardcoded
-  account; auth is wired via AshAuthentication password strategy but the reset
-  / magic-link flows are stubbed. Don't deploy.
+- **Single-user, deployed but locked-down.** Live at
+  packheavy.benkolera.com, bundled into the [benkolera-poncho] release
+  alongside electric-brain — one Fargate task, one ALB, one RDS. Auth0
+  fronts sign-in with a hardcoded email allowlist in a post-login Action.
+  Don't widen the allowlist; many design assumptions are single-user.
+- `priv/scripts/create_user.exs` seeds the local-dev account (password
+  strategy is dev-only; prod is Auth0).
 - See README for the user-facing feature list.
+
+[benkolera-poncho]: https://github.com/benkolera/benkolera-poncho
+
+## Always keep these in sync with code changes
+
+Treat these as part of the change, not follow-up work:
+
+1. **`README.md`** — if you add, remove, or meaningfully change a
+   user-visible feature in the "Features" list, update the README in
+   the same commit. If you change the resource graph (new Ash
+   domain, new cross-domain reference, new state-machine transition),
+   update the Mermaid architecture diagram.
+2. **Tests** — every change to an Ash resource, action, policy, or
+   live view event should land with a matching test edit. The test
+   suite is the only check that trip validation, kit expansion,
+   per-trip qty, and food decrement stay correct as we iterate.
+   Don't ship a schema change with no test movement; either update
+   an existing test or add one.
+3. **Ash snapshots** — `mix ash.codegen --name <descriptive>` after
+   any resource/attribute/action edit. Never hand-edit migration
+   files (this project has had zero one-shot data moves; if you need
+   one, follow the convention from the poncho's TimeBlocks split).
+
+If you're unsure whether something needs README or test movement,
+err on the side of yes.
 
 ## Domain layout
 

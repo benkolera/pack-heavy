@@ -6,8 +6,11 @@
 
 > ⚠️ **Single-user only.** Sign-up is disabled in the router and the
 > AshAuthentication password flows are stubbed. The deployed instance
-> uses Auth0 with a hardcoded email allowlist. Don't open this to
-> anyone but yourself.
+> at [packheavy.benkolera.com] uses Auth0 with a hardcoded email
+> allowlist (post-login Action). Don't widen the allowlist without
+> rethinking the model — many assumptions are single-user-shaped.
+
+[packheavy.benkolera.com]: https://packheavy.benkolera.com
 
 A personal hiking gear inventory and trip planner. Catalogue every item
 you own, bundle items into reusable **kits**, then plan **trips** that
@@ -138,6 +141,49 @@ afterwards so a profile change doesn't retroactively rewrite past
 trips).
 
 ## Architecture
+
+```mermaid
+flowchart LR
+    user([Single user])
+
+    user -->|"sign in"| auth0[Auth0<br/>email allowlist]
+    user --> trip
+
+    subgraph inv["Inventory · Ash Domain"]
+        item["Item<br/>union over embedded<br/>Pack / Food / Electronic / ..."]
+        cableType[CableType]
+        batteryType[BatteryType]
+        kit["Kit (template)"]
+        kitItem[KitItem]
+        kit --> kitItem
+        kitItem -.->|references| item
+        item -.->|references| cableType
+        item -.->|references| batteryType
+    end
+
+    subgraph trips["Trips · Ash Domain · state machine"]
+        trip[Trip]
+        tripItem["TripItem<br/>snapshot at add-time"]
+        tripKit["TripKit<br/>breadcrumb"]
+        tripLeg["TripLeg<br/>parsed GPX track"]
+        tripHiker[TripHiker]
+        tripContact[TripContact]
+
+        trip --> tripItem
+        trip --> tripKit
+        trip --> tripLeg
+        trip --> tripHiker
+        trip --> tripContact
+    end
+
+    tripItem -.->|references| item
+    tripKit -.->|copy-on-add| kit
+
+    trip -.->|"/handout (printable)"| handout[Pre-trip handout<br/>Cmd+P → PDF]
+    trip -.->|"/share/trip/:token"| share[Public read-only<br/>share link]
+```
+
+Domain summary:
 
 ```
 Packheavy.Accounts             AshAuthentication users + tokens
@@ -312,12 +358,22 @@ subsequent boots).
 
 ## Deploy
 
-The app deploys to AWS ECS Fargate behind an ALB with managed Postgres
-on RDS, all orchestrated by Pulumi (TypeScript). Auth0 fronts login —
-a post-login Action gates access to a hardcoded email allowlist. Pulumi
-state lives in S3 with KMS encryption. See
-[`infra/README.md`](infra/README.md) for the runbook (first-time
-setup, image build/push, hibernation).
+This app is deployed as half of the [benkolera-poncho] bundle
+alongside [electric-brain] — both apps share one Fargate task, one
+ALB, one RDS instance, one ECR repo. Auth0 fronts login with a
+post-login Action gating access to a hardcoded email allowlist;
+Pulumi (TypeScript) state lives in S3 with KMS encryption.
+
+The Pulumi project that used to live here (`infra/`) moved to the
+poncho repo when the bundle was set up; see the poncho's README for
+the runtime architecture and the `release.sh` workflow.
+
+For day-to-day work: commit + push here, then `cd benkolera-poncho
+&& ./infra/scripts/release.sh` bumps the submodule pointer and
+ships.
+
+[benkolera-poncho]: https://github.com/benkolera/benkolera-poncho
+[electric-brain]: https://github.com/benkolera/electric-brain
 
 ## Repo layout
 
@@ -360,7 +416,6 @@ assets/js/hooks/
   route_map.js                         Leaflet multi-leg map + hover
   leg_chart.js                         per-leg elevation crosshair
 
-infra/                                 Pulumi (TypeScript) for AWS
 priv/repo/migrations/                  Ash-codegen migrations
 priv/resource_snapshots/               Ash codegen snapshots
 priv/scripts/                          smoke / seed / fixup scripts
